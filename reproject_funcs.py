@@ -64,8 +64,36 @@ def hmi2phi(hmi_map: sunpy.map.Map, phi_map: sunpy.map.Map) -> sunpy.map.Map:
     
     return hmi_og_size
 
-def get_hrt_wcs_err(hrt_file: str,hmi_file: str) -> tuple:    
-    """get wcs error in HRT blos maps using HMI as reference
+
+def check_if_ic_images_exist(hrt_file: str, hmi_file: str) -> tuple:
+    """check if corresponding HRT and HMI continuum intensity images exist, and return the paths
+    
+    Parameters
+    ----------
+    hrt_file : str
+        HRT blos map path
+    hmi_file : str
+        HMI blos map path
+    
+    Returns
+    -------
+    tuple
+        (hrt_file, hmi_file) if both continuum intensity images exist, else raises OSError
+    """
+    hrt_icnt = hrt_file.replace('blos','icnt')
+    hmi_icnt = hmi_file.replace('magnetogram','continuum')
+    hmi_icnt = hmi_icnt.replace('.m_','.ic_')
+    hmi_icnt = hmi_icnt.replace('/blos_','/ic_')
+    try:
+        fits.getheader(hrt_icnt)
+        fits.getheader(hmi_icnt)
+    except OSError as e:
+        raise e(f'Continuum intensity images not found at attempted locations:\n{hrt_icnt}\n{hmi_icnt}')
+    return hrt_icnt, hmi_icnt
+
+
+def get_hrt_wcs_crval_err(hrt_file: str,hmi_file: str, save_crpix_err:bool = False) -> tuple:    
+    """get wcs error in HRT maps using HMI as reference, using the continuum intensity images
 
     Parameters
     ----------
@@ -73,20 +101,31 @@ def get_hrt_wcs_err(hrt_file: str,hmi_file: str) -> tuple:
         HRT blos map path
     hmi_file : str
         HMI blos map path
+    save_crpix_err : bool, optional
+        whether to return CRPIX1 and CRPIX2 errors in addition to CRVAL1 and CRVAL2 errors (default: False)
 
     Returns
     -------
-    errx : float
-        CRVAL1 error (x direction) in Helioprojective (I think)
-    erry : float
-        CRVAL2 error (y direction) in Helioprojective (I think)
+    (errx,erry) : tuple of astropy.coordinates.Skycoord
+        CRVAL1 error (x direction), CRVAL2 error (y direction) in Helioprojective (I think)
+    (s[1],s[0]) : tuple of floats
+        CRPIX1 error (x direction), CRPIX2 error (y direction) in HRT pixel units
     """
     print(hrt_file)
     print(hmi_file)
+    while 'blos' in hrt_file and 'magnetogram' in hmi_file:
+        print('Input files are magnetograms')
+        print('Continuum images result in much better HRT WCS CRVAL corrections')
+        print('Checking if corresponding continuum intensity images exist')
+        try:
+            hrt_file, hmi_file = check_if_ic_images_exist(hrt_file,hmi_file)
+        except:
+            return None
+        
     h=fits.getheader(hrt_file)
     hrt_map = sunpy.map.Map(fits.getdata(hrt_file),h)
     hmi_map = sunpy.map.Map(hmi_file)
-   
+
     hmi_remap = hmi2phi(hmi_map, hrt_map)
 
     _,s = image_register(hmi_remap.data, hrt_map.data, False, False)
@@ -94,7 +133,7 @@ def get_hrt_wcs_err(hrt_file: str,hmi_file: str) -> tuple:
 
     x_HRT=h['CRPIX1']
     y_HRT=h['CRPIX2']
-       
+
     x_HMI=h['CRPIX1']-s[1]
     y_HMI=h['CRPIX2']-s[0]
 
@@ -104,7 +143,10 @@ def get_hrt_wcs_err(hrt_file: str,hmi_file: str) -> tuple:
     errx=feature_coordshrt.Tx.value-feature_coordshmi.Tx.value
     erry=feature_coordshrt.Ty.value-feature_coordshmi.Ty.value
 
-    return (errx,erry)
+    if save_crpix_err:
+        return (errx,erry), (s[1],s[0])
+    else:
+        return (errx,erry)
 
 
 def get_hrt_remapped_R(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Gaussian', 'kernel_width': 10000,'sample_region_width': 1}) -> sunpy.map.Map:
@@ -182,8 +224,8 @@ def get_hrt_remapped_R(hrt_file: str, hmi_file: str, err: tuple, reproject_args:
     
     return hrt_remap, hmi_map
 
-def get_hmi_hrt_aligned(hrt_file,hmi_file):
-    """correct the WCS of HRT blos map using HMI blos map as reference and then remap HRT blos map to HMI blos map coords
+def get_hmi_hrt_aligned(hrt_file,hmi_file,err:tuple = None):
+    """correct the WCS of HRT map using HMI map as reference and then remap HRT map to HMI map coords
 
     Parameters
     ----------
@@ -191,12 +233,16 @@ def get_hmi_hrt_aligned(hrt_file,hmi_file):
         HRT blos map path
     hmi_file : str
         HMI blos map path
+    err: tuple
+        err in HRT CRVAL1 and CRVAL2 WCS keywords in astropy.coorindates.Skycoord, optional
+        if None, tries to compute it first by remapping HMI onto HRT frame and cross-correlation
 
     Returns
     -------
     list
         [hrt_remap,hmi_map] where hrt_remap is the HRT blos map remapped to HMI coords and hmi_map is the HMI blos map
     """
-    err=get_hrt_wcs_err(hrt_file,hmi_file)
+    if err is None:
+        err=get_hrt_wcs_err(hrt_file,hmi_file)
     hrt_remap, hmi_map = get_hrt_remapped_R(hrt_file, hmi_file, err)
     return [hrt_remap,hmi_map]

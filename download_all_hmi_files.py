@@ -1,10 +1,12 @@
+import os
 from datetime import datetime as dt
+from datetime import timedelta
 import drms
 import numpy as np
 from astropy.io import fits
 
-def get_hmi_blos(date: dt, series: str = 'hmi.m_45s', email: str = 'yourname@mail.com', out_dir: str='/path/to/save/files/'):
-    """get one HMI blos map for a given datetime (in UTC)
+def download_hmi_file(date: dt, series: str = 'hmi.m_45s', email: str = 'yourname@mail.com', out_dir: str='/path/to/save/files/'):
+    """get one HMI blos/ic map for a given datetime (in UTC)
 
     WARNING: JSOC will blacklist your email if you submit too many requests (1000+). For large downloads submit one request. You can also use the JSOC website to download the data manually.
 
@@ -17,6 +19,8 @@ def get_hmi_blos(date: dt, series: str = 'hmi.m_45s', email: str = 'yourname@mai
         Options: 
             'hmi.m_45s' (default)
             'hmi.m_720s'
+            'hmi.ic_45s'
+            'hmi.ic_720s'
     email : str
         email address for DRMS (default: 'yourname@gmail.com')
     out_dir : str
@@ -25,15 +29,21 @@ def get_hmi_blos(date: dt, series: str = 'hmi.m_45s', email: str = 'yourname@mai
     -------
     None   
     """
-    dtai = dt.timedelta(seconds=37) # difference between TAI and UTC
+    dtai = timedelta(seconds=37) # difference between TAI and UTC
     if series == 'hmi.m_45s':
         halfcad=23
-        dcad = dt.timedelta(seconds=35) # half HMI cadence (23) + margin
+        dcad = timedelta(seconds=35) # half HMI cadence (23) + margin
     elif series == 'hmi.m_720s':
         halfcad=360
-        dcad = dt.timedelta(seconds=360)
+        dcad = timedelta(seconds=360)
+    elif series == 'hmi.ic_45s':
+        halfcad=23
+        dcad = timedelta(seconds=35)
+    elif series == 'hmi.ic_720s':
+        halfcad=360
+        dcad = timedelta(seconds=360)
 
-    client = drms.Client(email=email, verbose=True)
+    client = drms.Client(email=email)
     kwlist = ['T_REC','T_OBS','DATE-OBS','CADENCE']
 
     keys = client.query(str(series)+'['+(date+dtai-dcad).strftime('%Y.%m.%d_%H:%M:%S')+'-'+
@@ -54,32 +64,51 @@ def get_hmi_blos(date: dt, series: str = 'hmi.m_45s', email: str = 'yourname@mai
     return None
 
 
-def get_hrt_dates(hrt_dir:str=''):
+def get_list_files(pdir:str='', series: str = 'blos', instrument:str = 'hrt'):
+    """get list of hrt files for given series in given directory
+
+    Parameters
+    ----------
+    pdir : str
+        path to directory containing HRT blos data
+    series : str
+        series name in file
+        'blos' (default)
+        'icnt'
+
+    """
+    files = list(set([file for file in os.listdir(pdir) if (series in file and instrument in file)]))
+    files.sort()
+    return files
+
+
+def get_hrt_earth_datetimes(hrt_dir:str='', series: str = 'blos'):
     """get all dates for all HRT blos files in given directory
 
     Parameters
     ----------
     hrt_dir : str
         path to directory containing HRT blos data
+    series : str
+        series name in file
+        'blos' (default)
+        'icnt'
 
     Returns
     -------
     dates : list
         list of datetime.datetime objects
     """
-    import os
-    from datetime import datetime as dt
     dates = []
-    base_files = os.listdir(hrt_dir)
-    blos_files = set([file for file in base_files if 'blos' in file].sort())
+    input_files=get_list_files(hrt_dir, series, 'hrt')
 
-    for file in blos_files:
+    for file in input_files:
             ht = fits.getheader(hrt_dir+file)
             dates.append(dt.fromisoformat(ht['DATE_EAR'])) #take into account the light time travel difference
     return dates
 
 
-def download_all_hmi_blos(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '', out_dir: str=''):
+def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '', out_dir: str=''):
     """download HMI blos maps for a list of dates
     
     Parameters
@@ -98,9 +127,9 @@ def download_all_hmi_blos(hrt_dir:str='', series: str = 'hmi.m_45s', email: str 
     -------
     None
     """
-    dates = get_hrt_dates(hrt_dir)
+    dates = get_hrt_earth_datetimes(hrt_dir)
     for date in dates:
-        get_hmi_blos(date, series, email, out_dir)
+        download_hmi_file(date, series, email, out_dir)
     return None
 
 

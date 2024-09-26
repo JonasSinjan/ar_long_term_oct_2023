@@ -149,7 +149,7 @@ def get_hrt_wcs_crval_err(hrt_file: str,hmi_file: str, save_crpix_err:bool = Fal
         return (errx,erry)
 
 
-def get_hrt_remapped_R(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Gaussian', 'kernel_width': 10000,'sample_region_width': 1}) -> sunpy.map.Map:
+def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Gaussian', 'kernel_width': 10000,'sample_region_width': 1}) -> sunpy.map.Map:
     """remap HRT blos map to HMI blos map coords with HMI pixel size, masking out the field stop region/apodization areas if PHI map is larger than (1800,1800)
 
     Parameters
@@ -244,5 +244,5 @@ def get_hmi_hrt_aligned(hrt_file,hmi_file,err:tuple = None):
     """
     if err is None:
         err=get_hrt_wcs_err(hrt_file,hmi_file)
-    hrt_remap, hmi_map = get_hrt_remapped_R(hrt_file, hmi_file, err)
+    hrt_remap, hmi_map = get_hrt_remapped_on_hmi(hrt_file, hmi_file, err)
     return [hrt_remap,hmi_map]

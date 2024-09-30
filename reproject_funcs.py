@@ -145,9 +145,9 @@ def get_hrt_wcs_crval_err(hrt_file: str,hmi_file: str, save_crpix_err:bool = Fal
     erry=feature_coordshrt.Ty.value-feature_coordshmi.Ty.value
 
     if save_crpix_err:
-        return (errx,erry), (s[1],s[0])
+        return (float(errx),float(erry)), (int(s[1]),int(s[0])) #json does not serialize numpy data types
     else:
-        return (errx,erry)
+        return (float(errx),float(erry))
 
 
 def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Gaussian', 'kernel_width': 10000,'sample_region_width': 1}) -> sunpy.map.Map:

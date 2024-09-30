@@ -9,6 +9,7 @@ from stereo_help import image_register
 
 from astropy.wcs import WCS
 from reproject import reproject_adaptive
+import os
 #from scipy.ndimage import map_coordinates
 
 def hmi2phi(hmi_map: sunpy.map.Map, phi_map: sunpy.map.Map) -> sunpy.map.Map:
@@ -85,10 +86,10 @@ def check_if_ic_images_exist(hrt_file: str, hmi_file: str) -> tuple:
     hmi_icnt = hmi_icnt.replace('.m_','.ic_')
     hmi_icnt = hmi_icnt.replace('/blos_','/ic_')
     try:
-        fits.getheader(hrt_icnt)
-        fits.getheader(hmi_icnt)
-    except OSError as e:
-        raise e(f'Continuum intensity images not found at attempted locations:\n{hrt_icnt}\n{hmi_icnt}')
+        os.path.isfile(hrt_icnt)
+        os.path.isfile(hmi_icnt)
+    except:
+        raise OSError(f'Continuum intensity images not found at attempted locations:\n{hrt_icnt}\n{hmi_icnt}')
     return hrt_icnt, hmi_icnt
 
 

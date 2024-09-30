@@ -1,7 +1,7 @@
-import os
 from reproject_funcs import check_if_ic_images_exist, get_hrt_wcs_crval_err
-from download_all_hmi_files import get_hrt_earth_datetimes, get_list_files
+from download_all_hmi_files import get_list_files
 import json
+from datetime import datetime as dt
 
 class CorrectHRTWCSPipe:
 
@@ -13,13 +13,13 @@ class CorrectHRTWCSPipe:
         self.hmi_target_file_series=hmi_target_file_series #'hmi.m_45s, hmi.m_720s, hmi.ic_45s, hmi.ic_720s'
 
         # load all the input and target files, check if continuum intensity images exist for HRT WCS corrections
-        if self.hrt_input_file_series is 'blos':
+        if self.hrt_input_file_series == 'blos':
             try:
                 self._check_all_files_for_icnt() #check if continuum intensity images exist
             except:
-                print('Cannot locate continuum intensity images for HRT WCS corrections')
+                raise OSError('Cannot locate continuum intensity images for HRT WCS corrections')
 
-        elif self.hrt_input_file_series is 'icnt' and 'ic_' in self.hmi_target_files_series:
+        elif self.hrt_input_file_series == 'icnt' and 'ic_' in self.hmi_target_files_series:
             self.get_all_hrt_files()
             self.get_all_hmi_files()
             self.check_if_equal_hrt_hmi_files()
@@ -42,12 +42,12 @@ class CorrectHRTWCSPipe:
 
     def get_all_hrt_files(self):
         """get list of desired HRT files in input folder"""
-        self.hrt_files=get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
+        self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
         self.number_hrt_files = len(self.hrt_files)
 
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
-        self.hmi_files=get_list_files(self.hmi_input_folder,self.hmi_ref_file_series, 'hmi')
+        self.hmi_files = get_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
         self.number_hmi_files = len(self.hmi_files)
 
     def check_if_equal_hrt_hmi_files(self):
@@ -56,6 +56,17 @@ class CorrectHRTWCSPipe:
             raise ValueError(f'Number of HRT and HMI files are not equal\n\
                              HRT files: {self.number_hrt_files}\n\
                              HMI files: {self.number_hmi_files}')
+    
+    def print_console_wcs_corrections(self,DID,DATE,crval_err,crpix_err):
+        """print WCS corrections to console"""
+        print('-----------------------------')
+        print(f'SO/PHI-HRT DID: {DID}')
+        print(f'Date: {DATE}')
+        print(f'CRVAL1 error: {crval_err[0]}')
+        print(f'CRVAL2 error: {crval_err[1]}')
+        print(f'CRPIX1 error: {crpix_err[0]}')
+        print(f'CRPIX2 error: {crpix_err[1]}')
+        print('-----------------------------')
 
     def calc_and_write_hrt_WCS_corrections(self):
         """get WCS CRVAL (and CRPIX) error in HRT maps using HMI as reference, using the continuum intensity images"""
@@ -65,11 +76,28 @@ class CorrectHRTWCSPipe:
         for files in zip(self.hrt_wcs_corr_files,self.hmi_wcs_corr_files):
             crval_err,crpix_err = get_hrt_wcs_crval_err(files[0],files[1],save_crpix_err=True)
             DID = str(files[0].split('.fits')[0].split('_')[-1])
+            DATE = dt.strptime(str(files[0].split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
             self.hrt_CRVAL_corrections[DID]=crval_err
             self.hrt_CRPIX_corrections[DID]=crpix_err
+            self.print_console_wcs_corrections(DID,DATE,crval_err,crpix_err)
         
         print(f'Writing HRT WCS corrections to json file in output folder: {self.output_folder}')
         with open(self.output_folder + 'hrt_CRVAL_corrections.json','w') as f:
             json.dump(self.hrt_CRVAL_corrections,f)
         with open(self.output_folder + 'hrt_CRPIX_corrections.json','w') as f:
             json.dump(self.hrt_CRPIX_corrections,f)
+
+    def run(self):
+        self.calc_and_write_hrt_WCS_corrections()
+        print('HRT WCS corrections calculated and written to json files')
+        return None
+    
+if __name__ == "__main__":
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
+    output_folder = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/'
+    hrt_input_file_series = 'blos'
+    hmi_target_file_series = 'hmi.m_45s'
+
+    pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series)
+    pipe.run()

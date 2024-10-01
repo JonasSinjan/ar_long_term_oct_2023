@@ -17,8 +17,7 @@ class CorrectHRTWCSPipe:
     3. The HMI target folders have the structure:
         /path/to/hmi/files/blos_45/
         /path/to/hmi/files/ic_45/
-        /path/to/hmi/files/blos_720/
-        /path/to/hmi/files/ic_720/
+    4. Only correct WCS using the 45s HMI data products
     """
     def __init__(self,hrt_input_folder: str,hmi_input_folder: str,output_folder: str,\
                  hrt_input_file_series: str,hmi_target_file_series: str,\
@@ -40,9 +39,7 @@ class CorrectHRTWCSPipe:
         hmi_target_file_series : str
             series name in HMI files
             'hmi.m_45s'
-            'hmi.m_720s'
             'hmi.ic_45s'
-            'hmi.ic_720s'
         hrt_start_time : datetime.datetime, optional
             start time for HRT files to be corrected (default: None)
         hrt_end_time : datetime.datetime, optional
@@ -122,7 +119,7 @@ class CorrectHRTWCSPipe:
         for hmif in hmitmp: #might have unequal number of files
             hmi_datetime = dt.strptime(str(hmif.split('_TAI')[0]\
                                         .split(self.hmi_target_file_series+'.')[1]), '%Y%m%d_%H%M%S')
-            light_travel_time=datetime.timedelta(seconds=720) #6 minutes maximum + 6 minutes safety from hmi 720s  
+            light_travel_time=datetime.timedelta(seconds=400) #6 minutes maximum + 30 seconds safety from hmi 45s  
             if hmi_datetime <= self.start_time + light_travel_time or hmi_datetime >= self.end_time + light_travel_time:
                 self.hmi_files.remove(hmif)
                 print(f'Removing file: {hmif} from HMI files list as it is not in the desired time range')
@@ -156,11 +153,7 @@ class CorrectHRTWCSPipe:
         hrt_date = dt.fromisoformat(hrt_earth)
         hmi_date = dt.strptime(fits.open(hmi_file)[1].header['T_OBS'].strip('_TAI')[:-4],'%Y.%m.%d_%H:%M:%S')
 
-        if self.hmi_target_file_series == 'hmi.m_45s' or self.hmi_target_file_series == 'hmi.ic_45s':
-            criterion = 25
-        elif self.hmi_target_file_series == 'hmi.m_720s' or self.hmi_target_file_series == 'hmi.ic_720s':
-            criterion = 360
-        if hrt_date - hmi_date < datetime.timedelta(seconds=criterion):
+        if hrt_date - hmi_date < datetime.timedelta(seconds=25):
             return True
         else:
             return False

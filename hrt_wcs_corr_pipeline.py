@@ -82,9 +82,9 @@ class CorrectHRTWCSPipe:
             self.print_console_wcs_corrections(DID,DATE,crval_err,crpix_err)
         
         print(f'Writing HRT WCS corrections to json file in output folder: {self.output_folder}')
-        with open(self.output_folder + 'hrt_CRVAL_corrections.json','w') as f:
+        with open(self.output_folder + 'hrt_CRVAL_corrections.json','a') as f:
             json.dump(self.hrt_CRVAL_corrections,f)
-        with open(self.output_folder + 'hrt_CRPIX_corrections.json','w') as f:
+        with open(self.output_folder + 'hrt_CRPIX_corrections.json','a') as f:
             json.dump(self.hrt_CRPIX_corrections,f)
 
     def run(self):

@@ -42,6 +42,8 @@ def download_hmi_file(date: dt, series: str = 'hmi.m_45s', email: str = 'yournam
     elif series == 'hmi.ic_720s':
         halfcad=360
         dcad = timedelta(seconds=360)
+    else:
+        raise ValueError('Invalid hmi series name, choose from \'hmi.m_45s\', \'hmi.m_720s\', \'hmi.ic_45s\', \'hmi.ic_720s\'')
 
     client = drms.Client(email=email)
     kwlist = ['T_REC','T_OBS','DATE-OBS','CADENCE']
@@ -133,3 +135,10 @@ def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '',
     return None
 
 
+if __name__ == '__main__':
+    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-13/'
+    series = 'hmi.ic_45s'
+    email = 'jonassinjan8@gmail.com'
+    out_dir = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
+
+    download_all_hmi(hrt_dir, series, email, out_dir)

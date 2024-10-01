@@ -111,30 +111,34 @@ class CorrectHRTWCSPipe:
             self.end_time = self.start_time + datetime.timedelta(days=1)
 
     def remove_files_outside_start_end_time(self):
-        for i,file in self.hrt_files:
-            hrt_datetime = dt.strptime(str(file.split('_')[-3]), '%Y%m%dT%H%M%S')
-            if not self.start_time <= hrt_datetime <= self.end_time:
-                self.hrt_files.remove(file)
-                print(f'Removing file: {file} from HRT files list as it is not in the desired time range')
+        hrttmp = list(self.hrt_files)
+        hmitmp = list(self.hmi_files)
+        for hrtf in hrttmp:
+            hrt_datetime = dt.strptime(str(hrtf.split('_')[-3]), '%Y%m%dT%H%M%S')
+            if hrt_datetime <= self.start_time or hrt_datetime >= self.end_time:
+                self.hrt_files.remove(hrtf)
+                print(f'Removing file: {hrtf} from HRT files list as it is not in the desired time range')
 
-            hmi_datetime = dt.strptime(str(self.hmi_files[i].split('_TAI')[0]\
-                                        .split(self.hmi_target_file_seriesseries+'.')[1]), '%Y%m%d_%H%M%S')
-            light_travel_time=int(fits.getheader(self.hrt_input_folder+file)['EAR_TDEL'])
-            light_travel_time=datetime.timedelta(seconds=light_travel_time)
+        for hmif in hmitmp: #might have unequal number of files
+            hmi_datetime = dt.strptime(str(hmif.split('_TAI')[0]\
+                                        .split(self.hmi_target_file_series+'.')[1]), '%Y%m%d_%H%M%S')
+            light_travel_time=datetime.timedelta(seconds=720) #6 minutes maximum + 6 minutes safety from hmi 720s  
+            if hmi_datetime <= self.start_time + light_travel_time or hmi_datetime >= self.end_time + light_travel_time:
+                self.hmi_files.remove(hmif)
+                print(f'Removing file: {hmif} from HMI files list as it is not in the desired time range')
 
-            if not self.start_time + light_travel_time <= hmi_datetime <= self.end_time + light_travel_time:
-                self.hmi_files.remove(self.hmi_files[i])
-                print(f'Removing file: {file} from HMI files list as it is not in the desired time range')
+        del hrttmp
+        del hmitmp
 
-    def remove_files_outside_start_end_time(self):
-        self.set_start_end_timechecks()
-        self.remove_files_outside_start_end_time()
+    def check_number_hrt_hmi_files(self):
+        """check if the number of HRT and HMI files are equal"""
         self.number_hrt_files = len(self.hrt_files)
         self.number_hmi_files = len(self.hmi_files)
-
-    def check_if_equal_hrt_hmi_files(self):
-        """check if the number of HRT and HMI files are equal"""
-        if self.number_hrt_files != self.number_hmi_files:
+        if self.number_hrt_files == 0:
+            raise ValueError('No HRT files found in the desired time range')
+        elif self.number_hmi_files == 0:
+            raise ValueError('No HMI files found in the desired time range')
+        elif self.number_hrt_files != self.number_hmi_files:
             raise ValueError(f'Number of HRT and HMI files are not equal\n\
                              HRT files: {self.number_hrt_files}\n\
                              HMI files: {self.number_hmi_files}')
@@ -142,8 +146,9 @@ class CorrectHRTWCSPipe:
     def load_hrt_hmi_files(self):
         self.get_all_hrt_files()
         self.get_all_hmi_files()
+        self.set_start_end_timechecks()
         self.remove_files_outside_start_end_time()
-        self.check_if_equal_hrt_hmi_files()
+        self.check_number_hrt_hmi_files()
         
     def file_pair_same_datetime(self,hrt_file,hmi_file):
         """check if HRT and HMI files have the same Earth datetime"""
@@ -214,7 +219,7 @@ if __name__ == "__main__":
     hrt_input_file_series = 'icnt'
     hmi_target_file_series = 'hmi.ic_45s'
     hrt_dt_start = dt(2023,10,15,0,0,0)
-    hrt_dt_end = dt(2023,10,15,1,0,0)
+    hrt_dt_end = dt(2023,10,16,0,0,0)
 
     pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,\
                              hrt_input_file_series,hmi_target_file_series, \

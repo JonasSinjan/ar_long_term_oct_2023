@@ -20,9 +20,33 @@ class CorrectHRTWCSPipe:
         /path/to/hmi/files/blos_720/
         /path/to/hmi/files/ic_720/
     """
-    def __init__(self,hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series,hrt_start_time: dt = None,hrt_end_time: dt = None):
-        """
-        
+    def __init__(self,hrt_input_folder: str,hmi_input_folder: str,output_folder: str,\
+                 hrt_input_file_series: str,hmi_target_file_series: str,\
+                 hrt_start_time: dt = None,hrt_end_time: dt = None):
+        """init
+
+        Parameters
+        ----------
+        hrt_input_folder : str
+            path to folder containing HRT files
+        hmi_input_folder : str
+            path to folder containing HMI files
+        output_folder : str
+            path to folder where WCS corrections will be written
+        hrt_input_file_series : str
+            series name in HRT files
+            'blos'
+            'icnt'
+        hmi_target_file_series : str
+            series name in HMI files
+            'hmi.m_45s'
+            'hmi.m_720s'
+            'hmi.ic_45s'
+            'hmi.ic_720s'
+        hrt_start_time : datetime.datetime, optional
+            start time for HRT files to be corrected (default: None)
+        hrt_end_time : datetime.datetime, optional
+            end time for HRT files to be corrected (default: None)
         """
         self.hrt_input_folder=hrt_input_folder
         self.hmi_input_folder=hmi_input_folder
@@ -57,40 +81,12 @@ class CorrectHRTWCSPipe:
         self.load_hrt_hmi_files()
         self.hrt_wcs_corr_files = []
         self.hmi_wcs_corr_files = []
-        for i,file in enumerate(self.hrt_files):
-            hrt_file = self.hrt_input_folder+file
-            hmi_file = self.hmi_input_folder+self.hmi_files[i]
+        for hrtf,hmif in zip(self.hrt_files,self.hmi_files):
+            hrt_file = self.hrt_input_folder+hrtf
+            hmi_file = self.hmi_input_folder+hmif
             hrt_icfile,hmi_icfile = check_if_ic_images_exist(hrt_file, hmi_file)
             self.hrt_wcs_corr_files.append(hrt_icfile)
             self.hmi_wcs_corr_files.append(hmi_icfile)
-
-    def set_start_end_timechecks(self):
-        if self.start_time is None:
-            self.start_time = dt.strptime(self.hrt_date,'%Y%m%d') #set to 00:00
-        if self.end_time is None:
-            self.end_time = self.start_time + datetime.timedelta(days=1)
-
-    def remove_files_outside_start_end_time(self):
-        self.set_start_end_timechecks()
-        self.remove_files_outside_start_end_time()
-        self.number_hrt_files = len(self.hrt_files)
-        self.number_hmi_files = len(self.hmi_files)
-
-    def remove_files_outside_start_end_time(self):
-        for i,file in self.hrt_files:
-            hrt_datetime = dt.strptime(str(file.split('_')[-3]), '%Y%m%dT%H%M%S')
-            if not self.start_time <= hrt_datetime <= self.end_time:
-                self.hrt_files.remove(file)
-                print(f'Removing file: {file} from HRT files list as it is not in the desired time range')
-
-            hmi_datetime = dt.strptime(str(self.hmi_files[0].split('_TAI')[0]\
-                                        .split(self.hmi_target_file_seriesseries+'.')[1]), '%Y%m%d_%H%M%S')
-            light_travel_time=int(fits.getheader(self.hrt_input_folder+file)['EAR_TDEL'])
-            light_travel_time=datetime.timedelta(seconds=light_travel_time)
-
-            if not self.start_time + light_travel_time <= hmi_datetime <= self.end_time + light_travel_time:
-                self.hrt_files.remove(file)
-                print(f'Removing file: {file} from HMI files list as it is not in the desired time range')
 
     def get_hmi_list_files(self,pdir:str='', series: str='', instrument:str = 'hmi'):
         """get list of hmi files for given series in given directory matching the date with the hrt files
@@ -107,6 +103,34 @@ class CorrectHRTWCSPipe:
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
         self.hmi_files = self.get_hmi_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
+
+    def set_start_end_timechecks(self):
+        if self.start_time is None:
+            self.start_time = dt.strptime(self.hrt_date,'%Y%m%d') #set to 00:00
+        if self.end_time is None:
+            self.end_time = self.start_time + datetime.timedelta(days=1)
+
+    def remove_files_outside_start_end_time(self):
+        for i,file in self.hrt_files:
+            hrt_datetime = dt.strptime(str(file.split('_')[-3]), '%Y%m%dT%H%M%S')
+            if not self.start_time <= hrt_datetime <= self.end_time:
+                self.hrt_files.remove(file)
+                print(f'Removing file: {file} from HRT files list as it is not in the desired time range')
+
+            hmi_datetime = dt.strptime(str(self.hmi_files[i].split('_TAI')[0]\
+                                        .split(self.hmi_target_file_seriesseries+'.')[1]), '%Y%m%d_%H%M%S')
+            light_travel_time=int(fits.getheader(self.hrt_input_folder+file)['EAR_TDEL'])
+            light_travel_time=datetime.timedelta(seconds=light_travel_time)
+
+            if not self.start_time + light_travel_time <= hmi_datetime <= self.end_time + light_travel_time:
+                self.hmi_files.remove(self.hmi_files[i])
+                print(f'Removing file: {file} from HMI files list as it is not in the desired time range')
+
+    def remove_files_outside_start_end_time(self):
+        self.set_start_end_timechecks()
+        self.remove_files_outside_start_end_time()
+        self.number_hrt_files = len(self.hrt_files)
+        self.number_hmi_files = len(self.hmi_files)
 
     def check_if_equal_hrt_hmi_files(self):
         """check if the number of HRT and HMI files are equal"""
@@ -147,7 +171,7 @@ class CorrectHRTWCSPipe:
         print(f'CRPIX2 error: {crpix_err[1]}')
         print('-----------------------------')
 
-    def calc_and_write_hrt_WCS_corrections(self):
+    def calc_hrt_WCS_corrections(self):
         """get WCS CRVAL (and CRPIX) error in HRT maps using HMI as reference, using the continuum intensity images"""
         self.hrt_CRVAL_corrections = {}
         self.hrt_CRPIX_corrections = {}
@@ -169,6 +193,8 @@ class CorrectHRTWCSPipe:
                 print('-----------------------------')
                 continue
         
+    def write_HRT_WCS_corrections(self):
+        """write the HRT WCS corrections to json files in the output folder, in append mode"""
         print(f'Writing HRT WCS corrections to json file in output folder: {self.output_folder}')
         with open(self.output_folder + 'hrt_CRVAL_corrections.json','a') as f:
             json.dump(self.hrt_CRVAL_corrections,f)
@@ -176,16 +202,21 @@ class CorrectHRTWCSPipe:
             json.dump(self.hrt_CRPIX_corrections,f)
 
     def run(self):
-        self.calc_and_write_hrt_WCS_corrections()
+        self.calc_hrt_WCS_corrections()
+        self.write_HRT_WCS_corrections()
         print('HRT WCS corrections calculated and written to json files')
         return None
     
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-14/'
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-15/'
     hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
     output_folder = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/'
     hrt_input_file_series = 'icnt'
     hmi_target_file_series = 'hmi.ic_45s'
+    hrt_dt_start = dt(2023,10,15,0,0,0)
+    hrt_dt_end = dt(2023,10,15,1,0,0)
 
-    pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series)
+    pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,\
+                             hrt_input_file_series,hmi_target_file_series, \
+                             hrt_start_time=hrt_dt_start, hrt_end_time=hrt_dt_end)
     pipe.run()

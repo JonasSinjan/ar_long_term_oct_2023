@@ -1,5 +1,6 @@
 import json
 import os
+import datetime
 from datetime import datetime as dt
 from astropy.io import fits
 
@@ -19,12 +20,25 @@ class CorrectHRTWCSPipe:
         /path/to/hmi/files/blos_720/
         /path/to/hmi/files/ic_720/
     """
-    def __init__(self,hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series):
+    def __init__(self,hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series,hrt_start_time: dt = None,hrt_end_time: dt = None):
+        """
+        
+        """
         self.hrt_input_folder=hrt_input_folder
         self.hmi_input_folder=hmi_input_folder
         self.output_folder=output_folder
         self.hrt_input_file_series=hrt_input_file_series #'blos','icnt'
         self.hmi_target_file_series=hmi_target_file_series #'hmi.m_45s, hmi.m_720s, hmi.ic_45s, hmi.ic_720s'
+
+        if isinstance(hrt_start_time,dt):
+            self.start_time = hrt_start_time
+        else:
+            self.start_time = None
+        
+        if isinstance(hrt_end_time,dt):
+            self.end_time = hrt_end_time
+        else:
+            self.end_time = None
 
         # load all the input and target files, check if continuum intensity images exist for HRT WCS corrections
         if self.hrt_input_file_series == 'blos':
@@ -34,17 +48,13 @@ class CorrectHRTWCSPipe:
                 raise OSError('Cannot locate continuum intensity images for HRT WCS corrections')
 
         elif self.hrt_input_file_series == 'icnt' and 'ic_' in self.hmi_target_file_series:
-            self.get_all_hrt_files()
-            self.get_all_hmi_files()
-            self.check_if_equal_hrt_hmi_files()
+            self.load_hrt_hmi_files()
             self.hrt_wcs_corr_files = [self.hrt_input_folder + f for f in self.hrt_files]
             self.hmi_wcs_corr_files = [self.hmi_input_folder + f for f in self.hmi_files]
 
     def _check_all_files_for_icnt(self):
         """check if the corresponding continuum intensity images for all input HRT files and HMI files exist"""
-        self.get_all_hrt_files()
-        self.get_all_hmi_files()
-        self.check_if_equal_hrt_hmi_files()
+        self.load_hrt_hmi_files()
         self.hrt_wcs_corr_files = []
         self.hmi_wcs_corr_files = []
         for i,file in enumerate(self.hrt_files):
@@ -53,6 +63,34 @@ class CorrectHRTWCSPipe:
             hrt_icfile,hmi_icfile = check_if_ic_images_exist(hrt_file, hmi_file)
             self.hrt_wcs_corr_files.append(hrt_icfile)
             self.hmi_wcs_corr_files.append(hmi_icfile)
+
+    def set_start_end_timechecks(self):
+        if self.start_time is None:
+            self.start_time = dt.strptime(self.hrt_date,'%Y%m%d') #set to 00:00
+        if self.end_time is None:
+            self.end_time = self.start_time + datetime.timedelta(days=1)
+
+    def remove_files_outside_start_end_time(self):
+        self.set_start_end_timechecks()
+        self.remove_files_outside_start_end_time()
+        self.number_hrt_files = len(self.hrt_files)
+        self.number_hmi_files = len(self.hmi_files)
+
+    def remove_files_outside_start_end_time(self):
+        for i,file in self.hrt_files:
+            hrt_datetime = dt.strptime(str(file.split('_')[-3]), '%Y%m%dT%H%M%S')
+            if not self.start_time <= hrt_datetime <= self.end_time:
+                self.hrt_files.remove(file)
+                print(f'Removing file: {file} from HRT files list as it is not in the desired time range')
+
+            hmi_datetime = dt.strptime(str(self.hmi_files[0].split('_TAI')[0]\
+                                        .split(self.hmi_target_file_seriesseries+'.')[1]), '%Y%m%d_%H%M%S')
+            light_travel_time=int(fits.getheader(self.hrt_input_folder+file)['EAR_TDEL'])
+            light_travel_time=datetime.timedelta(seconds=light_travel_time)
+
+            if not self.start_time + light_travel_time <= hmi_datetime <= self.end_time + light_travel_time:
+                self.hrt_files.remove(file)
+                print(f'Removing file: {file} from HMI files list as it is not in the desired time range')
 
     def get_hmi_list_files(self,pdir:str='', series: str='', instrument:str = 'hmi'):
         """get list of hmi files for given series in given directory matching the date with the hrt files
@@ -64,13 +102,11 @@ class CorrectHRTWCSPipe:
     def get_all_hrt_files(self):
         """get list of desired HRT files in input folder"""
         self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
-        self.number_hrt_files = len(self.hrt_files)
         self.hrt_date=self.hrt_files[0].split('_')[-3].split('T')[0]
 
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
         self.hmi_files = self.get_hmi_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
-        self.number_hmi_files = len(self.hmi_files)
 
     def check_if_equal_hrt_hmi_files(self):
         """check if the number of HRT and HMI files are equal"""
@@ -79,7 +115,13 @@ class CorrectHRTWCSPipe:
                              HRT files: {self.number_hrt_files}\n\
                              HMI files: {self.number_hmi_files}')
         
-    def check_file_pairs_same_datetime(self,hrt_file,hmi_file):
+    def load_hrt_hmi_files(self):
+        self.get_all_hrt_files()
+        self.get_all_hmi_files()
+        self.remove_files_outside_start_end_time()
+        self.check_if_equal_hrt_hmi_files()
+        
+    def file_pair_same_datetime(self,hrt_file,hmi_file):
         """check if HRT and HMI files have the same Earth datetime"""
         hrt_earth=fits.getheader(hrt_file)['DATE_EAR']
         hrt_date = dt.fromisoformat(hrt_earth)
@@ -89,7 +131,7 @@ class CorrectHRTWCSPipe:
             criterion = 25
         elif self.hmi_target_file_series == 'hmi.m_720s' or self.hmi_target_file_series == 'hmi.ic_720s':
             criterion = 360
-        if hrt_date - hmi_date < dt.timedelta(seconds=criterion):
+        if hrt_date - hmi_date < datetime.timedelta(seconds=criterion):
             return True
         else:
             return False
@@ -111,14 +153,15 @@ class CorrectHRTWCSPipe:
         self.hrt_CRPIX_corrections = {}
         
         for files in zip(self.hrt_wcs_corr_files,self.hmi_wcs_corr_files):
-            if self.check_file_pairs_same_datetime(files[0],files[1]):
+            if self.file_pair_same_datetime(files[0],files[1]):
                 crval_err,crpix_err = get_hrt_wcs_crval_err(files[0],files[1],save_crpix_err=True)
                 DID = str(files[0].split('.fits')[0].split('_')[-1])
-                DATE = dt.strptime(str(files[0].split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
+                DATETIME = dt.strptime(str(files[0].split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
                 self.hrt_CRVAL_corrections[DID]=crval_err
                 self.hrt_CRPIX_corrections[DID]=crpix_err
-                self.print_console_wcs_corrections(DID,DATE,crval_err,crpix_err)
+                self.print_console_wcs_corrections(DID,DATETIME,crval_err,crpix_err)
             else:
+                print('-----------------------------')
                 print('HRT and HMI file pair do not have the same Earth datetime\n')
                 print('Skipping WCS corrections for this pair\n')
                 print(f'HRT file: {files[0]}\n')

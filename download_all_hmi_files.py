@@ -84,7 +84,7 @@ def get_list_files(pdir:str='', series: str = 'blos', instrument:str = 'hrt'):
     return files
 
 
-def get_hrt_earth_datetimes(hrt_dir:str='', series: str = 'blos'):
+def get_hrt_earth_datetimes(hrt_dir:str='', series: str = 'blos', end_time: dt = None):
     """get all dates for all HRT blos files in given directory
 
     Parameters
@@ -95,6 +95,8 @@ def get_hrt_earth_datetimes(hrt_dir:str='', series: str = 'blos'):
         series name in file
         'blos' (default)
         'icnt'
+    end_time : datetime.datetime
+        end time for which to get dates (default: None)
 
     Returns
     -------
@@ -106,11 +108,15 @@ def get_hrt_earth_datetimes(hrt_dir:str='', series: str = 'blos'):
 
     for file in input_files:
             ht = fits.getheader(hrt_dir+file)
-            dates.append(dt.fromisoformat(ht['DATE_EAR'])) #take into account the light time travel difference
+            date = dt.fromisoformat(ht['DATE_EAR'])
+            if date <= end_time:
+                dates.append(date) #take into account the light time travel difference
+            else:
+                continue
     return dates
 
 
-def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '', out_dir: str=''):
+def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '', out_dir: str='', hrt_end_datetime: dt = None):
     """download HMI blos maps for a list of dates
     
     Parameters
@@ -129,16 +135,17 @@ def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '',
     -------
     None
     """
-    dates = get_hrt_earth_datetimes(hrt_dir)
+    dates = get_hrt_earth_datetimes(hrt_dir, end_time=hrt_end_datetime)
     for date in dates:
         download_hmi_file(date, series, email, out_dir)
     return None
 
 
 if __name__ == '__main__':
-    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-13/'
+    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
     series = 'hmi.ic_45s'
     email = 'jonassinjan8@gmail.com'
     out_dir = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
+    hrt_end_datetime = dt(2023,10,17,11,0,0)
 
-    download_all_hmi(hrt_dir, series, email, out_dir)
+    download_all_hmi(hrt_dir, series, email, out_dir, hrt_end_datetime=hrt_end_datetime)

@@ -1,9 +1,16 @@
-from reproject_funcs import check_if_ic_images_exist, get_hrt_wcs_crval_err
-from download_all_hmi_files import get_list_files
 import json
+import os
 from datetime import datetime as dt
 
+from reproject_funcs import check_if_ic_images_exist, get_hrt_wcs_crval_err
+from download_all_hmi_files import get_list_files
+
 class CorrectHRTWCSPipe:
+    """Pipeline to calculate WCS corrections in HRT maps using HMI as reference
+    
+    This pipeline is designed to take one folder containing the HRT input data, and one folder containting the HMI target data
+    """
+
 
     def __init__(self,hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series):
         self.hrt_input_folder=hrt_input_folder
@@ -19,7 +26,7 @@ class CorrectHRTWCSPipe:
             except:
                 raise OSError('Cannot locate continuum intensity images for HRT WCS corrections')
 
-        elif self.hrt_input_file_series == 'icnt' and 'ic_' in self.hmi_target_files_series:
+        elif self.hrt_input_file_series == 'icnt' and 'ic_' in self.hmi_target_file_series:
             self.get_all_hrt_files()
             self.get_all_hmi_files()
             self.check_if_equal_hrt_hmi_files()
@@ -40,14 +47,22 @@ class CorrectHRTWCSPipe:
             self.hrt_wcs_corr_files.append(hrt_icfile)
             self.hmi_wcs_corr_files.append(hmi_icfile)
 
+    def get_hmi_list_files(self,pdir:str='', series: str='', instrument:str = 'hmi'):
+        """get list of hmi files for given series in given directory matching the date with the hrt files
+        """
+        files = list(set([file for file in os.listdir(pdir) if (series in file and instrument in file and self.hrt_date in file)]))
+        files.sort()
+        return files
+
     def get_all_hrt_files(self):
         """get list of desired HRT files in input folder"""
         self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
         self.number_hrt_files = len(self.hrt_files)
+        self.hrt_date=self.hrt_files[0].split('_')[-3].split('T')[0]
 
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
-        self.hmi_files = get_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
+        self.hmi_files = self.get_hmi_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
         self.number_hmi_files = len(self.hmi_files)
 
     def check_if_equal_hrt_hmi_files(self):
@@ -93,11 +108,11 @@ class CorrectHRTWCSPipe:
         return None
     
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
-    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-13/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
     output_folder = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/'
-    hrt_input_file_series = 'blos'
-    hmi_target_file_series = 'hmi.m_45s'
+    hrt_input_file_series = 'icnt'
+    hmi_target_file_series = 'hmi.ic_45s'
 
     pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,hrt_input_file_series,hmi_target_file_series)
     pipe.run()

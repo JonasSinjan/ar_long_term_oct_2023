@@ -194,10 +194,21 @@ class CorrectHRTWCSPipe:
     def write_HRT_WCS_corrections(self):
         """write the HRT WCS corrections to json files in the output folder, in append mode"""
         print(f'Writing HRT WCS corrections to json file in output folder: {self.output_folder}')
-        with open(self.output_folder + 'hrt_CRVAL_corrections.json','a') as f:
-            json.dump(self.hrt_CRVAL_corrections,f)
-        with open(self.output_folder + 'hrt_CRPIX_corrections.json','a') as f:
-            json.dump(self.hrt_CRPIX_corrections,f)
+
+        if os.path.isfile(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json') or \
+            os.path.isfile(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json'):
+
+            print(f'File(s) hrt_CRVAL/CRPIX_corrections_{self.hrt_date}.json already exist in output folder.\n\
+                        Appending instead, please check for duplicates/multiple dicts in files.')
+            with open(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json','a') as f:
+                json.dump(self.hrt_CRVAL_corrections,f)
+            with open(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json','a') as f:
+                json.dump(self.hrt_CRPIX_corrections,f)
+        else:
+            with open(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json','w') as f:
+                json.dump(self.hrt_CRVAL_corrections,f)
+            with open(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json','w') as f:
+                json.dump(self.hrt_CRPIX_corrections,f)
 
     def run(self):
         self.calc_hrt_WCS_corrections()

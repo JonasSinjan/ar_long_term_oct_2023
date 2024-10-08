@@ -174,20 +174,22 @@ class CorrectHRTWCSPipe:
         self.hrt_CRVAL_corrections = {}
         self.hrt_CRPIX_corrections = {}
         
-        for files in zip(self.hrt_wcs_corr_files,self.hmi_wcs_corr_files):
-            if self.file_pair_same_datetime(files[0],files[1]):
-                crval_err,crpix_err = get_hrt_wcs_crval_err(files[0],files[1],save_crpix_err=True)
-                DID = str(files[0].split('.fits')[0].split('_')[-1])
-                DATETIME = dt.strptime(str(files[0].split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
+        for hrt_file, hmi_file in zip(self.hrt_wcs_corr_files,self.hmi_wcs_corr_files):
+            if self.file_pair_same_datetime(hrt_file,hmi_file):
+                crval_err,crpix_err = get_hrt_wcs_crval_err(hrt_file,hmi_file,save_crpix_err=True)
+                DID = str(hrt_file.split('.fits')[0].split('_')[-1])
+                DATETIME = dt.strptime(str(hrt_file.split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
                 self.hrt_CRVAL_corrections[DID]=crval_err
                 self.hrt_CRPIX_corrections[DID]=crpix_err
                 self.print_console_wcs_corrections(DID,DATETIME,crval_err,crpix_err)
             else:
+                HRT_input=hrt_file.split('/')[-1]
+                HMI_target=hmi_file.split('/')[-1]
                 print('-----------------------------')
                 print('HRT and HMI file pair do not have the same Earth datetime\n')
                 print('Skipping WCS corrections for this pair\n')
-                print(f'HRT file: {files[0]}\n')
-                print(f'HMI file: {files[1]}\n')
+                print(f'HRT file: \n{HRT_input}')
+                print(f'HMI file: \n{HMI_target}')
                 print('-----------------------------')
                 continue
         
@@ -217,13 +219,13 @@ class CorrectHRTWCSPipe:
         return None
     
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-15/'
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
     hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
     output_folder = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/'
     hrt_input_file_series = 'icnt'
     hmi_target_file_series = 'hmi.ic_45s'
-    hrt_dt_start = dt(2023,10,15,0,0,0)
-    hrt_dt_end = dt(2023,10,16,0,0,0)
+    hrt_dt_start = dt(2023,10,17,0,0,0)
+    hrt_dt_end = dt(2023,10,17,11,10,0)
 
     pipe = CorrectHRTWCSPipe(hrt_input_folder,hmi_input_folder,output_folder,\
                              hrt_input_file_series,hmi_target_file_series, \

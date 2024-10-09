@@ -1,4 +1,4 @@
-class LoadHRTandHMIfiles:
+class HRTandHMIfiles:
     
     def __init__(self,self,hrt_input_folder: str,hmi_input_folder: str,\
                  hrt_input_file_series: str,hmi_target_file_series: str,\
@@ -94,10 +94,15 @@ class LoadHRTandHMIfiles:
             raise ValueError(f'Number of HRT and HMI files are not equal\n\
                              HRT files: {self.number_hrt_files}\n\
                              HMI files: {self.number_hmi_files}')
+            
+    def create_full_file_paths(self):
+        self.hrt_fps = [self.hrt_input_folder + fn for fn in self.hrt_files]
+        self.hmi_fps = [self.hmi_input_folder + fn for fn in self.hmi_files]
         
-    def load_up(self):
+    def load(self):
         self.get_all_hrt_files()
         self.get_all_hmi_files()
         self.set_start_end_timechecks()
         self.remove_files_outside_start_end_time()
         self.check_number_hrt_hmi_files()
+        self.create_full_file_paths()

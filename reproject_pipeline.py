@@ -1,13 +1,40 @@
 import os
 import json
 import _pickle as cPickle
+from datetime import datetime as dt
+import datetime
+from astropy.io import fits
 from reproject_funcs import get_hrt_remapped_on_hmi
+from load_hrt_hmi_files import HRTandHMIfiles
 
 
 class ReprojectHRT2HMIPipe:
-
+    """reproject the HRT input files to the target HMI file pair detector
+    
+    Things this Pipeline does:
+    --------------------------
+    1. Load WCS corrections
+    2. Check WCS corrections fulfill all input HRT files
+    3. Correct HRT header and reproject onto HMI
+    4. Output HRT and HMI sunpy map objects to pickle
+    
+    Critical Assumptions:
+    ---------------------
+    1. WCS correction file contains CRVAL errors for all HRT errors for the input files
+    2. Linux OS for file paths
+    """
     def __init__(self, hrt_hmi_files: HRTandHMIfiles, output_folder: str, wcs_crval_corr_file: str):
-                 
+        """init
+
+        Parameters
+        ----------
+        hrt_hmi_files: HRTandHMIfiles instance
+            object that holds .hrt_files and .hmi_files
+        output_folder : str
+            path to folder where remapped HRT and HMI sunpy maps will be written as picles
+        wcs_crval_corr_file: str
+            path to the CRVAL correction file containing the CRVAL errs for all the HRT input files in the HRTandHMIfiles instance
+        """         
         self.hrt_fps = hrt_hmi_files.hrt_fps
         self.hmi_fps = hrt_hmi_files.hmi_fps
         self.output_folder = output_folder
@@ -17,23 +44,23 @@ class ReprojectHRT2HMIPipe:
 
     def _check_if_wcs_corrections_exist(self):
         try:
-            os.path.isfile(self.wcs_crval_corr_file')
+            os.path.isfile(self.wcs_crval_corr_file)
         except:
             raise OSError('WCS correction file not found.')
                            
-    def _get_wcs_corrs()
+    def _get_wcs_corrs(self):
         with open(self.wcs_crval_corr_file,'r') as f:
             self.hrt_CRVAL_corrections = json.load(f)
 
     def _check_DIDs_in_files_match_those_in_WCS_corrs(self):
         """check if all DIDs in HRT files are in the WCS corrections file"""
         file_DIDs = [str(f.split('.fits')[0].split('_')[-1]) for f in self.hrt_fps]
-        if set(file_DIDs) != set(self.hrt_corrections.keys()):
+        if set(file_DIDs) != set(self.hrt_CRVAL_corrections.keys()):
             raise ValueError('DIDs in HRT files are not equal to DIDs in WCS corrections file')
                            
     def load_wcs_corrections(self):
         self._get_wcs_corrs()
-        self._check_DIDs_in_hrt_CRVAL_corrections()
+        self._check_DIDs_in_files_match_those_in_WCS_corrs()
                            
     def print_console(self, DID, DATE, err, hmi_file):
         """print remap status to console"""
@@ -60,16 +87,16 @@ class ReprojectHRT2HMIPipe:
         self.hmi_target_sunpy_maps = []
                            
         for hrt_fp, hmi_fp in zip(self.hrt_fps,self.hmi_fps):
-            if self.file_pair_same_datetime(hrt_file,hmi_file):
+            if self.file_pair_same_datetime(hrt_fp,hmi_fp):
                 file_DID = str(hrt_fp.split('.fits')[0].split('_')[-1])
-                err = self.hrt_corrections[file_DID]         
+                err = self.hrt_CRVAL_corrections[file_DID]         
                 hrt_remap, hmi_map = get_hrt_remapped_on_hmi(hrt_fp, hmi_fp, err)
                 self.hrt_remapped_on_hmi_sunpy_maps.append(hrt_remap)
                 self.hmi_target_sunpy_maps.append(hmi_map)
                 DID = str(hrt_fp.split('.fits')[0].split('_')[-1])
                 DATETIME = dt.strptime(str(hrt_fp.split('_')[-3]), '%Y%m%dT%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
                 HMI_target = hmi_fp.split('/')[-1]
-                self.printe_console(DID,DATETIME, err, HMI_target)
+                self.print_console(DID,DATETIME, err, HMI_target)
             else:
                 HRT_input = hrt_fp.split('/')[-1]
                 HMI_target = hmi_fp.split('/')[-1]
@@ -107,20 +134,20 @@ class ReprojectHRT2HMIPipe:
         self.save_hrt_hmi_maps_to_pickles()
                            
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
-    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
     hrt_input_file_series = 'blos'
-    hmi_target_file_series = 'hmi.m_45s'
-    hrt_dt_start = dt(2023,10,12,0,0,0)
-    hrt_dt_end = dt(2023,10,13,0,0,0)
+    hmi_target_file_series = 'hmi.ic_45s'
+    hrt_dt_start = dt(2023,10,17,0,0,0)
+    hrt_dt_end = dt(2023,10,17,3,0,0)
     
     hrt_hmi_files = HRTandHMIfiles(hrt_input_folder, hmi_input_folder,\
                                   hrt_input_file_series, hmi_target_file_series, \
                                   hrt_start_time=hrt_dt_start, hrt_end_time=hrt_dt_end)
     hrt_hmi_files.load()
     
-    wcs_corr_folder = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/'
-    output_folder = '/data/slam/sinjan/arlongterm_out_pickles/'
+    wcs_corr_file = '/data/slam/sinjan/arlongterm_test/hrt_CRVAL_corrections_20231017.json'
+    output_folder = '/data/slam/sinjan/arlongterm_test/'
     
-    pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_folder)
+    pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)
     pipe.run()

@@ -5,11 +5,17 @@ from datetime import datetime as dt
 from astropy.io import fits
 
 from reproject_funcs import check_if_ic_images_exist, get_hrt_wcs_crval_err
-from download_all_hmi_files import get_list_files
 from load_hrt_hmi_files import HRTandHMIfiles
 
 class CorrectHRTWCSPipe:
-    """Pipeline to calculate WCS corrections in HRT maps using HMI as reference
+    """calculate WCS corrections in HRT maps using HMI as reference
+    
+    Things this Pipeline does:
+    -------------------------
+    1. Get 'icnt' and 'ic' file pairs
+        - if 'blos' in HRT files, try to find 'icnt' files and corresponding HMI 'ic' files
+    2. Calculate WCS errors of HRT using HMI
+    3. Write WCS errors (CRVAL and CRPIX) to output folder as json files
     
     Critical Assumptions:
     ---------------------
@@ -19,6 +25,9 @@ class CorrectHRTWCSPipe:
         /path/to/hmi/files/blos_45/
         /path/to/hmi/files/ic_45/
     4. Only correct WCS using the 45s HMI data products
+    5. Assumes HMI WCS is perfectly known
+    6. HRT CRPIX error is < +/- 500 pixels in X and Y
+    7. Linux OS for file paths
     """
     def __init__(self,hrt_hmi_files: HRTandHMIfiles,output_folder: str):
         """init

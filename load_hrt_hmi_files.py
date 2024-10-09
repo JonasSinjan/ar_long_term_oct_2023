@@ -1,5 +1,24 @@
+import os
+import datetime
+from datetime import datetime as dt
+from download_all_hmi_files import get_list_files
+
 class HRTandHMIfiles:
+    """load full filepaths for HRT and HMI files
     
+    Things this class does:
+    -----------------------
+    1. Load all the HRT and HMI files in the given input folders for the given file_series ('blos' or 'continuum intensity')
+    2. Remove any files outside the desired time range
+    3. Create full file paths
+    
+    Critical Assumptions:
+    ---------------------
+    1. Linux OS for file paths
+    2. Only using the 45s data products from HMI
+    3. HRT input folder only contains HRT files from one date
+    
+    """
     def __init__(self,self,hrt_input_folder: str,hmi_input_folder: str,\
                  hrt_input_file_series: str,hmi_target_file_series: str,\
                  hrt_start_time: dt = None,hrt_end_time: dt = None):)

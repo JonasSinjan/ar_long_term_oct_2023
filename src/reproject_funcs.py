@@ -5,7 +5,7 @@ import sunpy.map
 from datetime import datetime as dt
 import astropy.units as u
 
-from stereo_help import image_register
+from .stereo_help import image_register
 
 from astropy.wcs import WCS
 from reproject import reproject_adaptive

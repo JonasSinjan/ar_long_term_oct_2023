@@ -42,7 +42,30 @@ def test_get_all_hrt_files_blos() -> None:
 
 def test_get_hrt_date()-> None:
     """test the date is retrieved from HRT dates, and throws AssertionError if not all files have this date"""
-    pass
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
+    hmi_input_folder = ''
+    hrt_input_file_series = 'blos'
+    hmi_target_file_series = ''
+    hrt_dt_start = ''
+    hrt_dt_end = ''
+    tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
+                         hrt_dt_start, hrt_dt_end)
+    tmp.get_all_hrt_files()
+    tmp.get_hrt_date()
+    assert tmp.hrt_date == '20231017'
+    del tmp
+
+    hrt_input_folder = '/data/solo/phi/data/fmdb/l1/groundflat/'
+    hmi_input_folder = ''
+    hrt_input_file_series = 'FLAT'
+    hmi_target_file_series = ''
+    hrt_dt_start = ''
+    hrt_dt_end = ''
+    tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
+                         hrt_dt_start, hrt_dt_end)
+    tmp.get_all_hrt_files()
+    with pytest.raises(AssertionError):
+        tmp.get_hrt_date()
 
 def test_get_all_hmi_files_m45() -> None:
     """test that only hmi files of given file series and date are loaded and instrument and no duplicates"""

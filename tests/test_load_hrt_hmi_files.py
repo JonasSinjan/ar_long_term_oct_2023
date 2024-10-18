@@ -131,8 +131,60 @@ def test_start_end_time_set_if_none()-> None:
 
 def test_remove_files_outside_start_end_time() -> None:
     """test to make sure that no files with datetimes lie outside the start and end time, not taking into account light travel time"""
-    pass
+    hrt_input_folder = ''
+    hmi_input_folder = ''
+    hrt_input_file_series = ''
+    hmi_target_file_series = ''
+    hrt_dt_start = ''
+    hrt_dt_end = ''
+    tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
+                         hrt_dt_start, hrt_dt_end)
+    tmp.hrt_files=['','']
+    tmp.hmi_files=['','','']
+    tmp.remove_files_outside_start_end_time()
 
-def test_number_check_files():
+    correct_hrt=[]
+    correct_hmi=[]
+    assert tmp.hrt_files == correct_hrt
+    assert tmp.hmi_files == correct_hmi
+
+def test_number_check_no_files() -> None:
     """test if the check has expected behaviour with valueErorrs if no files found and alerting the user if files are not equal"""
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-18/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45'
+    hrt_input_file_series = 'icnt'
+    hmi_target_file_series = ''
+    hrt_dt_start = '10:00'
+    hrt_dt_end = '23:00'
+    tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
+                         hrt_dt_start, hrt_dt_end)
+    tmp.get_all_hrt_files()
+    tmp.get_hrt_date()
+    tmp.get_all_hmi_files()
+    with pytest.raises(ValueError):
+        tmp.check_number_hrt_hmi_files()
 
+    #check raise error no hrt files
+    tmp.hrt_files=[]
+    with pytest.raises(ValueError):
+        tmp.check_number_hrt_hmi_files()
+
+def test_number_check_files_notequal(capfd) -> None:
+    """test if the check has expected behaviour with valueErorrs if no files found and alerting the user if files are not equal"""
+    hrt_input_folder = ''
+    hmi_input_folder = ''
+    hrt_input_file_series = ''
+    hmi_target_file_series = ''
+    hrt_dt_start = ''
+    hrt_dt_end = ''
+    tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
+                         hrt_dt_start, hrt_dt_end)
+    tmp.hrt_files=['file1','file2']
+    tmp.hmi_files=['file1','file2','file3']
+    
+    tmp.check_number_hrt_hmi_files()
+    out, err = capfd.readouterr()
+    assert 'Number of HRT and HMI files are not equal' in out
+    
+def test_create_full_fp() -> None:
+    pass

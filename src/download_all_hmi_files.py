@@ -145,10 +145,10 @@ def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '',
 
 if __name__ == '__main__':
     hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
-    series = 'hmi.ic_45s'
+    series = 'hmi.m_45s'
     email = 'jonassinjan8@gmail.com'
-    out_dir = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
-    hrt_start_datetime = dt(2023,10,17,10,50,0)
-    hrt_end_datetime = dt(2023,10,17,11,00,0)
+    out_dir = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
+    hrt_start_datetime = dt(2023,10,17,0,0,0)
+    hrt_end_datetime = dt(2023,10,17,11,0,0)
 
     download_all_hmi(hrt_dir, series, email, out_dir, hrt_start_datetime=hrt_start_datetime,hrt_end_datetime=hrt_end_datetime)

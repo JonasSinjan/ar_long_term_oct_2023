@@ -35,12 +35,18 @@ Co-coordinators: Jonas Sinjan and Laura Hayes.
 - uses WCS errors calculated prior
 - outputs remapped HRT and target HMI maps as sunpy map objects to pickles
 
-### `src/reproject_mu_pipeline.py` -> Pipeline to reproject HRT $\mu$ map onto HMI detector frame
+### `src/reproject_mu_pipeline.py` -> Pipeline to reproject HRT $\mu$ maps onto HMI detector frame
 
 - identical to `reproject_pipeline.py` but instead computes the $\mu$ value in each HRT pixel
 - reprojects these $\mu$ values onto HMI detector frame
 - computes the $\mu$ values in the HMI detector frame
-- outputs these $\mu$ maps as sunpy map obejects to pickles
+- outputs these $\mu$ maps as sunpy map objects to pickles
+
+### `src/load_hrt_hmi_files.py` -> Pipeline to load and select all the desired HRT and HMI files
+
+- input start and end time
+- finds HRT and HMI file pairs
+- used as input object for other pipelines
 
 ### `src/download_all_hmi_files.py` -> Download HMI files that correspond to HRT files from JSOC using drms
 
@@ -51,4 +57,4 @@ Co-coordinators: Jonas Sinjan and Laura Hayes.
 
 #### `src/stereo_help` -> helper functions for cross-correlation
 
-#### `src/reproject_funcs.py` -> helper functions for reprojection and $\mu$ computation
+#### `src/reproject_funcs.py` -> heavy lift functions for reprojection and $\mu$ computation

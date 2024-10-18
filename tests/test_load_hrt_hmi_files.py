@@ -15,10 +15,10 @@ def test_get_all_hrt_files_icnt() -> None:
     tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
                          hrt_dt_start, hrt_dt_end)
     tmp.get_all_hrt_files()
-    assert 'hrt' in all(tmp.hrt_files)
-    assert 'fdt' not in all(tmp.hrt_files)
-    assert 'icnt' in all(tmp.hrt_files)
-    assert '20231017' in all(tmp.hrt_files)
+    assert all(['hrt' in file for file in tmp.hrt_files])
+    assert all(['fdt' not in file for file in tmp.hrt_files])
+    assert all(['icnt' in file for file in tmp.hrt_files])
+    assert all(['20231017' in file for file in tmp.hrt_files])
     assert len(tmp.hrt_files) == len(set(tmp.hrt_files))
     del tmp
 
@@ -34,10 +34,10 @@ def test_get_all_hrt_files_blos() -> None:
     tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
                          hrt_dt_start, hrt_dt_end)
     tmp.get_all_hrt_files()
-    assert 'hrt' in all(tmp.hrt_files)
-    assert 'fdt' not in all(tmp.hrt_files)
-    assert 'blos' in all(tmp.hrt_files)
-    assert '20231012' in all(tmp.hrt_files)
+    assert all(['hrt' in file for file in tmp.hrt_files])
+    assert all(['fdt' not in file for file in tmp.hrt_files])
+    assert all(['blos' in file for file in tmp.hrt_files])
+    assert all(['20231012' in file for file in tmp.hrt_files])
     assert len(tmp.hrt_files) == len(set(tmp.hrt_files))
 
 def test_get_hrt_date()-> None:
@@ -57,7 +57,7 @@ def test_get_hrt_date()-> None:
 
     hrt_input_folder = '/data/solo/phi/data/fmdb/l1/groundflat/'
     hmi_input_folder = ''
-    hrt_input_file_series = 'FLAT'
+    hrt_input_file_series = 'flat'
     hmi_target_file_series = ''
     hrt_dt_start = ''
     hrt_dt_end = ''
@@ -80,10 +80,10 @@ def test_get_all_hmi_files_m45() -> None:
     tmp.get_all_hrt_files()
     tmp.get_hrt_date()
     tmp.get_all_hmi_files()
-    assert 'hmi' in all(tmp.hmi_files)
-    assert 'm_720s' not in all(tmp.hmi_files)
-    assert 'm_45s' in all(tmp.hmi_files)
-    assert '20231017' in all(tmp.hmi_files)
+    assert all(['hmi' in file for file in tmp.hmi_files])
+    assert all(['m_720s' not in file for file in tmp.hmi_files])
+    assert all(['m_45s' in file for file in tmp.hmi_files])
+    assert all(['20231017' in file for file in tmp.hmi_files])
     assert len(tmp.hmi_files) == len(set(tmp.hmi_files))
 
 def test_get_all_hmi_files_ic45() -> None:
@@ -100,10 +100,10 @@ def test_get_all_hmi_files_ic45() -> None:
     tmp.get_all_hrt_files()
     tmp.get_hrt_date()
     tmp.get_all_hmi_files()
-    assert 'hmi' in all(tmp.hmi_files)
-    assert 'ic_720s' not in all(tmp.hmi_files)
-    assert 'ic_45s' in all(tmp.hmi_files)
-    assert '20231012' in all(tmp.hmi_files)
+    assert all(['hmi' in file for file in tmp.hmi_files])
+    assert all(['ic_720s' not in file for file in tmp.hmi_files])
+    assert all(['ic_45s' in file for file in tmp.hmi_files])
+    assert all(['20231012' in file for file in tmp.hmi_files])
     assert len(tmp.hmi_files) == len(set(tmp.hmi_files))
 
 def test_start_end_time_init_non_dt() -> None:
@@ -124,9 +124,10 @@ def test_start_end_time_set_if_none()-> None:
     tmp = HRTandHMIfiles(hrt_input_folder, hmi_input_folder, hrt_input_file_series, hmi_target_file_series, \
                          hrt_dt_start, hrt_dt_end)
     tmp.get_all_hrt_files()
+    tmp.get_hrt_date()
     tmp.set_start_end_timechecks()
-    assert tmp.start_time is dt(2023,10,17,0,0,0)
-    assert tmp.end_time is dt(2023,10,18,0,0,0)
+    assert tmp.start_time == dt(2023,10,17,0,0,0)
+    assert tmp.end_time == dt(2023,10,18,0,0,0)
 
 def test_remove_files_outside_start_end_time() -> None:
     """test to make sure that no files with datetimes lie outside the start and end time, not taking into account light travel time"""

@@ -1,7 +1,7 @@
 import os
 import datetime
 from datetime import datetime as dt
-from download_all_hmi_files import get_list_files
+from src.download_all_hmi_files import get_list_files
 
 class HRTandHMIfiles:
     """load full filepaths for HRT and HMI files
@@ -71,7 +71,7 @@ class HRTandHMIfiles:
 
     def get_hrt_date(self):
         self.hrt_date=self.hrt_files[0].split('_')[-3].split('T')[0]
-        if self.hrt_date not in all(self.hrt_files):
+        if any([self.hrt_date not in file for file in self.hrt_files]):
             raise AssertionError(f'Not all HRT files contain {self.hrt_date}')
 
     def get_all_hmi_files(self):

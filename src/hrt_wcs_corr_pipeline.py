@@ -5,7 +5,7 @@ from datetime import datetime as dt
 from astropy.io import fits
 
 from reproject_funcs import check_if_ic_images_exist, get_hrt_wcs_crval_err
-from load_hrt_hmi_files import HRTandHMIfiles
+from src.load_hrt_hmi_files import HRTandHMIfiles
 
 class CorrectHRTWCSPipe:
     """calculate WCS corrections in HRT maps using HMI as reference

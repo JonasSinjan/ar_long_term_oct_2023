@@ -68,7 +68,11 @@ class HRTandHMIfiles:
     def get_all_hrt_files(self):
         """get list of desired HRT files in input folder"""
         self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
+
+    def get_hrt_date(self):
         self.hrt_date=self.hrt_files[0].split('_')[-3].split('T')[0]
+        if self.hrt_date not in all(self.hrt_files):
+            raise AssertionError(f'Not all HRT files contain {self.hrt_date}')
 
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
@@ -109,9 +113,9 @@ class HRTandHMIfiles:
         elif self.number_hmi_files == 0:
             raise ValueError('No HMI files found in the desired time range')
         elif self.number_hrt_files != self.number_hmi_files:
-            raise ValueError(f'Number of HRT and HMI files are not equal\n\
-                             HRT files: {self.number_hrt_files}\n\
-                             HMI files: {self.number_hmi_files}')
+            print(f'Number of HRT and HMI files are not equal\n\
+                    HRT files: {self.number_hrt_files}\n\
+                    HMI files: {self.number_hmi_files}')
             
     def create_full_file_paths(self):
         self.hrt_fps = [self.hrt_input_folder + fn for fn in self.hrt_files]
@@ -119,6 +123,7 @@ class HRTandHMIfiles:
         
     def load(self):
         self.get_all_hrt_files()
+        self.get_hrt_date()
         self.get_all_hmi_files()
         self.set_start_end_timechecks()
         self.remove_files_outside_start_end_time()

@@ -117,19 +117,26 @@ class CorrectHRTWCSPipe:
         """write the HRT WCS corrections to json files in the output folder, in append mode"""
         print(f'Writing HRT WCS corrections to json file in output folder: {self.output_folder}')
 
-        if os.path.isfile(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json') or \
-            os.path.isfile(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json'):
+        starttime = dt.strftime(self.start_time,"%y%M%dT%H%M%S")   
+        endtime = dt.strftime(self.end_time,"%y%M%dT%H%M%S")
+        crval_output_fp = self.output_folder+f"hrt_CRVAL_corrections_{starttime}_{endtime}.json"
+        crpix_output_fp = self.output_folder+f"hrt_CRPIX_corrections_{starttime}_{endtime}.json"
 
-            print(f'File(s) hrt_CRVAL/CRPIX_corrections_{self.hrt_date}.json already exist in output folder.\n\
-                        Appending instead, please check for duplicates/multiple dicts in files.')
-            with open(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json','a') as f:
+        if os.path.isfile(crval_output_fp) or os.path.isfile(crpix_output_fp):
+
+            print(f'File(s): \n\
+                {crval_output_fp}\n\
+                {crpix_output_fp} \n\
+                already exist.\n\
+                Appending instead, please check for duplicates/multiple dicts in files.')
+            with open(crval_output_fp,'a') as f:
                 json.dump(self.hrt_CRVAL_corrections,f)
-            with open(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json','a') as f:
+            with open(crpix_output_fp,'a') as f:
                 json.dump(self.hrt_CRPIX_corrections,f)
         else:
-            with open(self.output_folder + f'hrt_CRVAL_corrections_{self.hrt_date}.json','w') as f:
+            with open(crval_output_fp,'w') as f:
                 json.dump(self.hrt_CRVAL_corrections,f)
-            with open(self.output_folder + f'hrt_CRPIX_corrections_{self.hrt_date}.json','w') as f:
+            with open(crpix_output_fp,'w') as f:
                 json.dump(self.hrt_CRPIX_corrections,f)
 
     def run(self):

@@ -118,8 +118,8 @@ class HRTandHMIfiles:
                     HMI files: {self.number_hmi_files}')
             
     def create_full_file_paths(self):
-        self.hrt_fps = [self.hrt_input_folder + fn for fn in self.hrt_files]
-        self.hmi_fps = [self.hmi_input_folder + fn for fn in self.hmi_files]
+        self.hrt_fps = [os.path.join(self.hrt_input_folder,fn) for fn in self.hrt_files]
+        self.hmi_fps = [os.path.join(self.hmi_input_folder,fn) for fn in self.hmi_files]
         
     def load(self):
         self.get_all_hrt_files()

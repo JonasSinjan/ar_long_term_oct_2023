@@ -162,3 +162,9 @@ cython_debug/
 #.idea/
 .ipynb_checkpoints/PLAN-checkpoint.ipynb
 .ipynb_checkpoints/reproject-checkpoint.py
+
+movie_pngs
+movie_pngs/*
+
+htmlcov
+htmlcov/*

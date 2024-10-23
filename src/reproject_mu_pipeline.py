@@ -5,7 +5,7 @@ from datetime import datetime as dt
 import datetime
 from astropy.io import fits
 from reproject_funcs import get_hrt_MU_remapped_on_hmi
-from src.load_hrt_hmi_files import HRTandHMIfiles
+from load_hrt_hmi_files import HRTandHMIfiles
 
 
 class ReprojectHRTMU2HMIPipe:

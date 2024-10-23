@@ -1,7 +1,7 @@
 import os
 import datetime
 from datetime import datetime as dt
-from src.download_all_hmi_files import get_list_files
+from download_all_hmi_files import get_list_files
 
 class HRTandHMIfiles:
     """load full filepaths for HRT and HMI files

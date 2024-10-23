@@ -5,7 +5,7 @@ from datetime import datetime as dt
 import datetime
 from astropy.io import fits
 from reproject_funcs import get_hrt_remapped_on_hmi
-from src.load_hrt_hmi_files import HRTandHMIfiles
+from load_hrt_hmi_files import HRTandHMIfiles
 
 
 class ReprojectHRT2HMIPipe:
@@ -141,19 +141,19 @@ class ReprojectHRT2HMIPipe:
         self.save_hrt_hmi_maps_to_pickles()
                            
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
-    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
-    hrt_input_file_series = 'blos'
-    hmi_target_file_series = 'hmi.m_45s' #same as hrt for reprojecting purposes
-    hrt_dt_start = dt(2023,10,17,0,0,0)
-    hrt_dt_end = dt(2023,10,17,11,0,0)
+    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
+    hrt_input_file_series = 'icnt'
+    hmi_target_file_series = 'hmi.ic_45s' #same as hrt for reprojecting purposes
+    hrt_dt_start = dt(2023,10,12,0,0,0)
+    hrt_dt_end = dt(2023,10,13,0,0,0)
     
     hrt_hmi_files = HRTandHMIfiles(hrt_input_folder, hmi_input_folder,\
                                   hrt_input_file_series, hmi_target_file_series, \
                                   hrt_start_time=hrt_dt_start, hrt_end_time=hrt_dt_end)
     hrt_hmi_files.load()
     
-    wcs_corr_file = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_20231017.json'
+    wcs_corr_file = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_20231012.json'
     output_folder = '/data/slam/sinjan/arlongterm_pickles/'
     
     pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)

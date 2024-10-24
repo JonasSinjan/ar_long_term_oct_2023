@@ -30,20 +30,14 @@ def download_hmi_file(date: dt, series: str = 'hmi.m_45s', email: str = 'yournam
     None   
     """
     dtai = timedelta(seconds=37) # difference between TAI and UTC
-    if series == 'hmi.m_45s':
+    if series[-3:] == '45s':
         halfcad=23
         dcad = timedelta(seconds=35) # half HMI cadence (23) + margin
-    elif series == 'hmi.m_720s':
+    elif series[-4:] == '720s':
         halfcad=360
-        dcad = timedelta(seconds=360)
-    elif series == 'hmi.ic_45s':
-        halfcad=23
-        dcad = timedelta(seconds=35)
-    elif series == 'hmi.ic_720s':
-        halfcad=360
-        dcad = timedelta(seconds=360)
+        dcad = timedelta(seconds=380) # half HMI cadence (360) + margin
     else:
-        raise ValueError('Invalid hmi series name, choose from \'hmi.m_45s\', \'hmi.m_720s\', \'hmi.ic_45s\', \'hmi.ic_720s\'')
+        raise ValueError('Cadence of series not recognized: only 45s and 720s are supported')
 
     client = drms.Client(email=email)
     kwlist = ['T_REC','T_OBS','DATE-OBS','CADENCE']
@@ -140,15 +134,40 @@ def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '',
     dates = get_hrt_earth_datetimes(hrt_dir, start_time=hrt_start_datetime, end_time=hrt_end_datetime)
     for date in dates:
         download_hmi_file(date, series, email, out_dir)
+    if series == 'B_720s':
+        clean_up_folder_b_720s(out_dir)
     return None
 
+def clean_up_folder_b_720s(out_dir):
+    """clean up folder containing HMI 720s files, leaves 'field.fits, 'inclination.fits', 'azimuth.fits', 'vlos_mag.fits'
+
+    Parameters
+    ----------
+    out_dir : str
+        path to directory containing HMI 720s files
+
+    Returns
+    -------
+    None
+    """
+    files = os.listdir(out_dir)
+    unwanted_files = ['confid_map','info_map','conf_disambig','azimuth_alpha_err','inclination_alpha_err',\
+                      'field_alpha_err','inclin_azimuth_err','field_az_err','field_inclination_err','alpha_err',\
+                      'vlos_err','field_err','azimuth_err','inclination_err','conv_flag','chisq','alpha_mag',\
+                      'src_grad','src_continuum','damping','eta_0','dop_width']
+    for file in files:
+        if any(file_name in file for file_name in unwanted_files):
+            os.remove(out_dir+file)
+    return None
 
 if __name__ == '__main__':
-    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-17/'
-    series = 'hmi.m_45s'
+    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
+    series = 'hmi.B_720s'
     email = 'jonassinjan8@gmail.com'
-    out_dir = '/data/slam/sinjan/arlongterm_hmi/blos_45/'
-    hrt_start_datetime = dt(2023,10,17,0,0,0)
-    hrt_end_datetime = dt(2023,10,17,11,0,0)
+    out_dir = '/data/slam/sinjan/arlongterm_hmi/b_720/'
+    hrt_start_datetime = dt(2023,10,12,0,0,0)
+    hrt_end_datetime = dt(2023,10,13,0,0,0)
 
+    
     download_all_hmi(hrt_dir, series, email, out_dir, hrt_start_datetime=hrt_start_datetime,hrt_end_datetime=hrt_end_datetime)
+    #clean_up_folder_b_720s(out_dir)

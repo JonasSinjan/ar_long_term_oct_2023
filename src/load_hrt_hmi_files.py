@@ -38,6 +38,11 @@ class HRTandHMIfiles:
             series name in HMI files
             'hmi.m_45s'
             'hmi.ic_45s'
+            'hmi.m_720s'
+            'hmi.ic_720s'
+            'hmi.b_720s_field'
+            'hmi.b_720s_inclination'
+            'hmi.b_720s_azimuth'
         hrt_start_time : datetime.datetime, optional
             start time for HRT files to be corrected (default: None)
         hrt_end_time : datetime.datetime, optional
@@ -45,8 +50,21 @@ class HRTandHMIfiles:
         """
         self.hrt_input_folder=hrt_input_folder
         self.hmi_input_folder=hmi_input_folder
-        self.hrt_input_file_series=hrt_input_file_series #'blos','icnt'
-        self.hmi_target_file_series=hmi_target_file_series #'hmi.m_45s, hmi.m_720s, hmi.ic_45s, hmi.ic_720s'
+
+        accepted_hrt_file_series = ['blos','icnt','bmag','binc','bazi'] 
+
+        if hrt_input_file_series in accepted_hrt_file_series:
+            self.hrt_input_file_series=hrt_input_file_series
+        else:
+            raise ValueError(f'hrt_input_file_series must be one of {accepted_hrt_file_series}')
+
+        accepted_hmi_file_series = ['hmi.m_45s','hmi.ic_45s','hmi.m_720s','hmi.ic_720s',\
+                                    'hmi.b_720s_field','hmi.b_720s_inclination','hmi.b_720s_azimuth']
+        
+        if hmi_target_file_series in accepted_hmi_file_series:
+            self.hmi_target_file_series=hmi_target_file_series
+        else:
+            raise ValueError(f'hmi_target_file_series must be one of {accepted_hmi_file_series}')
 
         if isinstance(hrt_start_time,dt):
             self.start_time = hrt_start_time
@@ -61,7 +79,14 @@ class HRTandHMIfiles:
     def get_hmi_list_files(self,pdir:str='', series: str='', instrument:str = 'hmi'):
         """get list of hmi files for given series in given directory matching the date with the hrt files
         """
-        files = list(set([file for file in os.listdir(pdir) if (series in file and instrument in file and self.hrt_date in file)]))
+        requirements = [series,instrument,self.hrt_date]
+        if any([vecc in series for vecc in ['field','inclination','azimuth']]):
+            series_new = series.split('s')[0]+'s'
+            requirements[0]=series_new
+            vec_component = series.split('s')[1][1:]
+            requirements.append(vec_component)
+
+        files = list(set([file for file in os.listdir(pdir) if all([req in file for req in requirements])]))
         files.sort()
         return files
 
@@ -95,7 +120,7 @@ class HRTandHMIfiles:
 
         for hmif in hmitmp: #might have unequal number of files
             hmi_datetime = dt.strptime(str(hmif.split('_TAI')[0]\
-                                        .split(self.hmi_target_file_series+'.')[1]), '%Y%m%d_%H%M%S')
+                                        .split('.')[-1]), '%Y%m%d_%H%M%S')
             light_travel_time=datetime.timedelta(seconds=400) #6 minutes maximum + 30 seconds safety from hmi 45s  
             if hmi_datetime <= self.start_time + light_travel_time or hmi_datetime >= self.end_time + light_travel_time:
                 self.hmi_files.remove(hmif)

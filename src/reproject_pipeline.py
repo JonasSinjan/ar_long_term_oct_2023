@@ -14,7 +14,7 @@ class ReprojectHRT2HMIPipe:
     Things this Pipeline does:
     --------------------------
     1. Load WCS corrections
-    2. Check WCS corrections fulfill all input HRT files
+    2. Check WCS corrections fulfil all input HRT files
     3. Correct HRT header and reproject onto HMI
     4. Output HRT and HMI sunpy map objects to pickle
     
@@ -29,7 +29,7 @@ class ReprojectHRT2HMIPipe:
         Parameters
         ----------
         hrt_hmi_files: HRTandHMIfiles instance
-            object that holds .hrt_files and .hmi_files
+            object that holds .hrt_fps and .hmi_fps
         output_folder : str
             path to folder where remapped HRT and HMI sunpy maps will be written as picles
         wcs_crval_corr_file: str
@@ -38,6 +38,7 @@ class ReprojectHRT2HMIPipe:
         self.hrt_fps = hrt_hmi_files.hrt_fps
         self.hmi_fps = hrt_hmi_files.hmi_fps
         self.hrt_output_series = hrt_hmi_files.hrt_input_file_series
+        self.hmi_output_series = hrt_hmi_files.hmi_target_file_series
         self.start_time = hrt_hmi_files.start_time
         self.end_time = hrt_hmi_files.end_time
         self.output_folder = output_folder
@@ -141,19 +142,20 @@ class ReprojectHRT2HMIPipe:
         self.save_hrt_hmi_maps_to_pickles()
                            
 if __name__ == "__main__":
-    hrt_input_folder = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
-    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/ic_45/'
-    hrt_input_file_series = 'icnt'
-    hmi_target_file_series = 'hmi.ic_45s' #same as hrt for reprojecting purposes
-    hrt_dt_start = dt(2023,10,12,0,0,0)
-    hrt_dt_end = dt(2023,10,13,0,0,0)
+    day = 12
+    hrt_input_folder = f'/data/solo/phi/data/fmdb/public/l2/2023-10-{day}/'
+    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/b_720/'
+    hrt_input_file_series = 'bmag'
+    hmi_target_file_series = 'hmi.b_720s_field' #same as hrt for reprojecting purposes
+    hrt_dt_start = dt(2023,10,day,0,0,0)
+    hrt_dt_end = dt(2023,10,day+1,0,0,0)
     
     hrt_hmi_files = HRTandHMIfiles(hrt_input_folder, hmi_input_folder,\
                                   hrt_input_file_series, hmi_target_file_series, \
                                   hrt_start_time=hrt_dt_start, hrt_end_time=hrt_dt_end)
     hrt_hmi_files.load()
     
-    wcs_corr_file = '/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_20231012.json'
+    wcs_corr_file = f'/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_202310{day}.json'
     output_folder = '/data/slam/sinjan/arlongterm_pickles/'
     
     pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)

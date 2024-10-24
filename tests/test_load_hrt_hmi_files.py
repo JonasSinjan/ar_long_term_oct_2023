@@ -6,7 +6,7 @@ from src.load_hrt_hmi_files import HRTandHMIfiles
 
 @pytest.fixture
 def loader() -> None:
-    return HRTandHMIfiles('','','','','','')
+    return HRTandHMIfiles('','','blos','hmi.m_45s','','')
 
 def test_get_all_hrt_files_icnt(loader) -> None:
     """test that only hrt files of given file series and date are loaded and instrument and no duplicates"""
@@ -83,7 +83,7 @@ def test_get_all_hmi_files_ic45(loader) -> None:
 
 def test_start_end_time_init_non_dt() -> None:
     """test that if a none datetime object is passed for start time, None is set"""
-    loader = HRTandHMIfiles('','','','','10:00','')
+    loader = HRTandHMIfiles('','','blos','hmi.m_45s','10:00','')
 
     assert loader.start_time is None
     assert loader.end_time is None

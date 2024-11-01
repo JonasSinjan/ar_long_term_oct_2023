@@ -154,20 +154,30 @@ def clean_up_folder_b_720s(out_dir):
     unwanted_files = ['confid_map','info_map','conf_disambig','azimuth_alpha_err','inclination_alpha_err',\
                       'field_alpha_err','inclin_azimuth_err','field_az_err','field_inclination_err','alpha_err',\
                       'vlos_err','field_err','azimuth_err','inclination_err','conv_flag','chisq','alpha_mag',\
-                      'src_grad','src_continuum','damping','eta_0','dop_width']
+                      'src_grad','src_continuum','damping','eta_0','dop_width','vlos_mag','azimuth','disambig']
     for file in files:
         if any(file_name in file for file_name in unwanted_files):
             os.remove(out_dir+file)
     return None
 
 if __name__ == '__main__':
-    hrt_dir = '/data/solo/phi/data/fmdb/public/l2/2023-10-12/'
-    series = 'hmi.B_720s'
-    email = 'jonassinjan8@gmail.com'
-    out_dir = '/data/slam/sinjan/arlongterm_hmi/b_720/'
-    hrt_start_datetime = dt(2023,10,12,0,0,0)
-    hrt_end_datetime = dt(2023,10,13,0,0,0)
 
+    series = 'hmi.ic_720s'
+    email = 'jonassinjan8@gmail.com'
+    out_dir = '/scratch/slam/sinjan/arlongterm_hmi/ic_720/'
+
+    for i in [12]:
+        hrt_dir = f'/data/solo/phi/data/fmdb/public/l2/2023-10-{i}/'
+        end = i+1
+        endhour = 0
+        endminute = 0
+        if i == 17:
+            endhour = 11
+            endminute = 2
+            end = i
+        hrt_start_datetime = dt(2023,10,i,0,0,0)
+        hrt_end_datetime = dt(2023,10,end,endhour,endminute,0)
+
+        download_all_hmi(hrt_dir, series, email, out_dir, hrt_start_datetime=hrt_start_datetime,hrt_end_datetime=hrt_end_datetime)
     
-    download_all_hmi(hrt_dir, series, email, out_dir, hrt_start_datetime=hrt_start_datetime,hrt_end_datetime=hrt_end_datetime)
-    #clean_up_folder_b_720s(out_dir)
+        #clean_up_folder_b_720s(out_dir)

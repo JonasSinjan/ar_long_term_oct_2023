@@ -115,8 +115,8 @@ class ReprojectHRT2HMIPipe:
                 continue
                            
     def save_hrt_hmi_maps_to_pickles(self):
-        starttime = dt.strftime(self.start_time,"%y%M%dT%H%M%S")   
-        endtime = dt.strftime(self.end_time,"%y%M%dT%H%M%S")
+        starttime = dt.strftime(self.start_time,"%y%m%dT%H%M%S")   
+        endtime = dt.strftime(self.end_time,"%y%m%dT%H%M%S")
         hmi_output_series = self.hmi_output_series.split('.')[-1]
         hrt_output_fp = self.output_folder+f"HRTs_{self.hrt_output_series}_remapped_on_HMI_{starttime}_{endtime}.pickle"
         hmi_output_fp = self.output_folder+f"HMIs_{hmi_output_series}_{starttime}_{endtime}.pickle"
@@ -142,21 +142,32 @@ class ReprojectHRT2HMIPipe:
         self.save_hrt_hmi_maps_to_pickles()
                            
 if __name__ == "__main__":
-    day = 12
-    hrt_input_folder = f'/data/solo/phi/data/fmdb/public/l2/2023-10-{day}/'
-    hmi_input_folder = '/data/slam/sinjan/arlongterm_hmi/b_720/'
+
     hrt_input_file_series = 'bmag'
-    hmi_target_file_series = 'hmi.b_720s_field' #same as hrt for reprojecting purposes
-    hrt_dt_start = dt(2023,10,day,0,0,0)
-    hrt_dt_end = dt(2023,10,day+1,0,0,0)
-    
-    hrt_hmi_files = HRTandHMIfiles(hrt_input_folder, hmi_input_folder,\
+    hmi_input_folder = '/scratch/slam/sinjan/arlongterm_hmi/b_720/'
+    hmi_target_file_series = 'hmi.b_720s_field'
+
+    for day in [13,14,15,16,17]:
+        hrt_input_folder = f'/data/solo/phi/data/fmdb/public/l2/2023-10-{day}/'
+        
+        end = day+1
+        endhour = 0
+        endminute = 0
+        if day == 17:
+            endhour = 11
+            endminute = 2
+            end = day
+
+        hrt_dt_start = dt(2023,10,day,0,0,0)
+        hrt_dt_end = dt(2023,10,end,endhour,endminute,0)
+
+        hrt_hmi_files = HRTandHMIfiles(hrt_input_folder, hmi_input_folder,\
                                   hrt_input_file_series, hmi_target_file_series, \
                                   hrt_start_time=hrt_dt_start, hrt_end_time=hrt_dt_end)
-    hrt_hmi_files.load()
+        hrt_hmi_files.load()
+
+        wcs_corr_file = f'/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_202310{day}.json'
+        output_folder = '/data/slam/sinjan/arlongterm_pickles/'
     
-    wcs_corr_file = f'/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_202310{day}.json'
-    output_folder = '/data/slam/sinjan/arlongterm_pickles/'
-    
-    pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)
-    pipe.run()
+        pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)
+        pipe.run()

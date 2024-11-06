@@ -1,0 +1,11 @@
+astropy
+sunpy
+drms
+matplotlib
+reproject
+numpy
+scipy
+ipykernel
+jupyter
+jupyter-lab
+

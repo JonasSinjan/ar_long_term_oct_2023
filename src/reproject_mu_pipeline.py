@@ -113,8 +113,8 @@ class ReprojectHRTMU2HMIPipe:
                 continue
                            
     def save_hrt_hmi_mu_maps_to_pickles(self):
-        starttime = dt.strftime(self.start_time,"%y%m%dT%H%M%S")   
-        endtime = dt.strftime(self.end_time,"%y%m%dT%H%M%S")
+        starttime = dt.strftime(self.start_time,"%Y%m%dT%H%M%S")   
+        endtime = dt.strftime(self.end_time,"%Y%m%dT%H%M%S")
         hrt_output_fp = self.output_folder+f"HRTs_MU_remapped_on_HMI_{starttime}_{endtime}.pickle"
         hmi_output_fp = self.output_folder+f"HMIs_MU_{starttime}_{endtime}.pickle"
         if os.path.isfile(hrt_output_fp) or os.path.isfile(hmi_output_fp):

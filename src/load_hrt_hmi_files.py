@@ -14,9 +14,9 @@ class HRTandHMIfiles:
     
     Critical Assumptions:
     ---------------------
-    1. Linux OS for file paths
-    2. Only using the 45s data products from HMI
-    3. HRT input folder only contains HRT files from one date
+    1. **HRT input folder only contains HRT files from one date**
+    2. Linux OS for file paths
+    3. Only using the 45s data products from HMI
     
     """
     def __init__(self,hrt_input_folder: str,hmi_input_folder: str,\
@@ -92,7 +92,7 @@ class HRTandHMIfiles:
 
     def get_all_hrt_files(self):
         """get list of desired HRT files in input folder"""
-        self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series, 'hrt')
+        self.hrt_files = get_list_files(self.hrt_input_folder,self.hrt_input_file_series,'hrt')
 
     def get_hrt_date(self):
         self.hrt_date=self.hrt_files[0].split('_')[-3].split('T')[0]
@@ -101,7 +101,7 @@ class HRTandHMIfiles:
 
     def get_all_hmi_files(self):
         """get list of desired HMI files in input folder"""
-        self.hmi_files = self.get_hmi_list_files(self.hmi_input_folder,self.hmi_target_file_series, 'hmi')
+        self.hmi_files = self.get_hmi_list_files(self.hmi_input_folder,self.hmi_target_file_series,'hmi')
 
     def set_start_end_timechecks(self):
         if self.start_time is None:

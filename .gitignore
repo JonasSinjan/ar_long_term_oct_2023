@@ -168,3 +168,5 @@ movie_pngs/*
 
 htmlcov
 htmlcov/*
+jupyter_nbks/log_arlongterm_guassian_kernel.txt
+*.txt

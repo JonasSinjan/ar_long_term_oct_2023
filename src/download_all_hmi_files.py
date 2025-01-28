@@ -54,7 +54,7 @@ def download_hmi_file(date: dt, series: str = 'hmi.m_45s', email: str = 'yournam
         print('T_OBS:',dt.strptime(keys['T_OBS'][ind],'%Y.%m.%d_%H:%M:%S_TAI') - dtai)
         print('Input DATETIME: ',date)
         print('')
-
+    
     m = client.export(name_h,protocol='fits')
     m.download(out_dir)
     return None
@@ -139,7 +139,7 @@ def download_all_hmi(hrt_dir:str='', series: str = 'hmi.m_45s', email: str = '',
     return None
 
 def clean_up_folder_b_720s(out_dir):
-    """clean up folder containing HMI 720s files, leaves 'field.fits, 'inclination.fits', 'azimuth.fits', 'vlos_mag.fits'
+    """clean up folder containing HMI 720s files, leaves 'field.fits, 'inclination.fits', 'azimuth.fits'
 
     Parameters
     ----------
@@ -158,6 +158,9 @@ def clean_up_folder_b_720s(out_dir):
     for file in files:
         if any(file_name in file for file_name in unwanted_files):
             os.remove(out_dir+file)
+
+    extensions_to_check = ('field.fits','inclination.fits','azimuth.fits')
+    assert all(file.endswith(extensions_to_check) for file in os.listdir(out_dir))
     return None
 
 if __name__ == '__main__':

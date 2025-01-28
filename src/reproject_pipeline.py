@@ -23,7 +23,7 @@ class ReprojectHRT2HMIPipe:
     1. WCS correction file contains CRVAL errors for all HRT errors for the input files
     2. Linux OS for file paths
     """
-    def __init__(self, hrt_hmi_files: HRTandHMIfiles, output_folder: str, wcs_crval_corr_file: str):
+    def __init__(self, hrt_hmi_files: HRTandHMIfiles, output_folder: str, wcs_crval_corr_file: str, apply_hmi_psf: bool = False):
         """init
 
         Parameters
@@ -34,6 +34,8 @@ class ReprojectHRT2HMIPipe:
             path to folder where remapped HRT and HMI sunpy maps will be written as picles
         wcs_crval_corr_file: str
             path to the CRVAL correction file containing the CRVAL errs for all the HRT input files in the HRTandHMIfiles instance
+        apply_hmi_psf: bool
+            apply the HMI PSF to HRT map before remapping
         """         
         self.hrt_fps = hrt_hmi_files.hrt_fps
         self.hmi_fps = hrt_hmi_files.hmi_fps
@@ -42,6 +44,7 @@ class ReprojectHRT2HMIPipe:
         self.start_time = hrt_hmi_files.start_time
         self.end_time = hrt_hmi_files.end_time
         self.output_folder = output_folder
+        self.apply_hmi_psf = apply_hmi_psf
 
         self.wcs_crval_corr_file = wcs_crval_corr_file #CRVAL
         self._check_if_wcs_corrections_exist()
@@ -96,7 +99,7 @@ class ReprojectHRT2HMIPipe:
             if self.file_pair_same_datetime(hrt_fp,hmi_fp):
                 file_DID = str(hrt_fp.split('.fits')[0].split('_')[-1])
                 err = self.hrt_CRVAL_corrections[file_DID]         
-                hrt_remap, hmi_map = get_hrt_remapped_on_hmi(hrt_fp, hmi_fp, err)
+                hrt_remap, hmi_map = get_hrt_remapped_on_hmi(hrt_fp, hmi_fp, err, reproject_args={'kernel':'Hann', 'kernel_width':1, 'sample_region_width':1}, hmi_psf = self.apply_hmi_psf)
                 self.hrt_remapped_on_hmi_sunpy_maps.append(hrt_remap)
                 self.hmi_target_sunpy_maps.append(hmi_map)
                 DID = str(hrt_fp.split('.fits')[0].split('_')[-1])
@@ -115,14 +118,15 @@ class ReprojectHRT2HMIPipe:
                 continue
                            
     def save_hrt_hmi_maps_to_pickles(self):
-        starttime = dt.strftime(self.start_time,"%y%m%dT%H%M%S")   
-        endtime = dt.strftime(self.end_time,"%y%m%dT%H%M%S")
+        starttime = dt.strftime(self.start_time,"%Y%m%dT%H%M%S")   
+        endtime = dt.strftime(self.end_time,"%Y%m%dT%H%M%S")
         hmi_output_series = self.hmi_output_series.split('.')[-1]
-        hrt_output_fp = self.output_folder+f"HRTs_{self.hrt_output_series}_remapped_on_HMI_{starttime}_{endtime}.pickle"
+        hrt_output_fp = self.output_folder+f"HRTs_{self.hrt_output_series}_remapped_on_HMI_{starttime}_{endtime}_hmipsf_{self.apply_hmi_psf}.pickle"
         hmi_output_fp = self.output_folder+f"HMIs_{hmi_output_series}_{starttime}_{endtime}.pickle"
         if os.path.isfile(hrt_output_fp) or os.path.isfile(hmi_output_fp):
             print(f'File(s): \n\
                   {hrt_output_fp} \n\
+                  OR \n\
                   {hmi_output_fp} \n\
                   already exist. \n\
                   Adding \'_NEW\' to filenames.')
@@ -143,12 +147,12 @@ class ReprojectHRT2HMIPipe:
                            
 if __name__ == "__main__":
 
-    hrt_input_file_series = 'bmag'
-    hmi_input_folder = '/scratch/slam/sinjan/arlongterm_hmi/b_720/'
-    hmi_target_file_series = 'hmi.b_720s_field'
+    hrt_input_file_series = 'blos'
+    hmi_input_folder = '/scratch/slam/sinjan/arlongterm_hmi/blos_720/'
+    hmi_target_file_series = 'hmi.m_720s'#'hmi.b_720s_field'
 
-    for day in [13,14,15,16,17]:
-        hrt_input_folder = f'/data/solo/phi/data/fmdb/public/l2/2023-10-{day}/'
+    for day in [12,13,14,15,16,17]:
+        hrt_input_folder = f'/scratch/solo/phi/AR_Long_Term_2023_SL/l2/2023-10-{day}/'
         
         end = day+1
         endhour = 0
@@ -167,7 +171,7 @@ if __name__ == "__main__":
         hrt_hmi_files.load()
 
         wcs_corr_file = f'/data/slam/sinjan/arlongterm_hrt_wcs_corr/hrt_CRVAL_corrections_202310{day}.json'
-        output_folder = '/data/slam/sinjan/arlongterm_pickles/'
+        output_folder = '/data/slam/sinjan/arlongterm_pickles_hann_SL/'
     
-        pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file)
+        pipe = ReprojectHRT2HMIPipe(hrt_hmi_files, output_folder, wcs_corr_file, apply_hmi_psf=True)
         pipe.run()

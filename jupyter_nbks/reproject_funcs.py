@@ -5,8 +5,7 @@ import sunpy.map
 from datetime import datetime as dt
 import astropy.units as u
 
-from stereo_help import image_register
-from apply_hmi_psf import *
+#from stereo_help import image_register
 
 from astropy.wcs import WCS
 from reproject import reproject_adaptive
@@ -151,7 +150,7 @@ def get_hrt_wcs_crval_err(hrt_file: str,hmi_file: str, save_crpix_err:bool = Fal
         return (float(errx),float(erry))
 
 
-def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Hann', 'kernel_width': 10000,'sample_region_width': 1}, hmi_psf = False) -> sunpy.map.Map:
+def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_args: dict = {'kernel': 'Gaussian', 'kernel_width': 10000,'sample_region_width': 1}) -> sunpy.map.Map:
     """remap HRT blos map to HMI blos map coords with HMI pixel size, masking out the field stop region/apodization areas if PHI map is larger than (1800,1800)
 
     Parameters
@@ -162,11 +161,6 @@ def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_
         HMI blos map path
     err : tuple
         CRPIX1 and CRPIX2 error in Skycoords
-    reproject_args : dict, optional
-        reproject_adaptive arguments (default: {'kernel': 'Hann', 'kernel_width': 10000,'sample_region_width': 1})
-        if 'kernel' is 'Hann', remaining parameters are ignored, only used if 'kernel' is 'Gaussian'
-    hmi_psf : bool, optional
-        whether to apply HMI PSF to HRT map before remap(default: False)
     
     Returns
     -------
@@ -183,14 +177,6 @@ def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_
     h['CRVAL1']=h['CRVAL1']-errx
     h['CRVAL2']=h['CRVAL2']-erry
     tmp = fits.getdata(hrt_file)
-
-    if hmi_psf:
-        phi_dsun = h['DSUN_OBS']
-        hmi_psf = make_psf_hmi_th(tmp.shape[0],phi_dsun)
-        hmi_psf /= hmi_psf.max()
-        tmp = fftshift(ifft2(fft2(tmp)/tmp.size * fft2(hmi_psf/hmi_psf.sum())).real * tmp.size) 
-
-
     arr=np.zeros(tmp.shape)
     if tmp.shape[0]<=1800 and tmp.shape[1]<=1800:
         arr=tmp
@@ -472,7 +458,7 @@ def get_hrt_MU_remapped_on_hmi(hrt_file, hmi_file, err):
     out_header['cdelt2'] = hmi_map.fits_header['cdelt2']
     out_WCS=WCS(out_header)
 
-    hrt_repro, footprint = reproject_adaptive(hrt_mu_map, out_WCS, hmi_map.data.shape, kernel='Hann')
+    hrt_repro, footprint = reproject_adaptive(hrt_mu_map, out_WCS, hmi_map.data.shape)
     
     #print(tmp.shape)
     
@@ -482,7 +468,7 @@ def get_hrt_MU_remapped_on_hmi(hrt_file, hmi_file, err):
         arr_mask=np.zeros(tmp.shape)
         arr_mask[150:-150,150:-150]=1
         mask_map = sunpy.map.Map(arr_mask,h)
-        mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape, kernel='Hann')
+        mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape)
         mask_hrt[mask_hrt<1]=np.nan
         hrt_mu_map = sunpy.map.Map((hrt_repro*mask_hrt,hmi_map.meta))
 

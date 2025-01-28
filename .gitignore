@@ -170,3 +170,5 @@ htmlcov
 htmlcov/*
 jupyter_nbks/log_arlongterm_guassian_kernel.txt
 *.txt
+jupyter_nbks/bmag_compare.ipynb
+jupyter_nbks/straylight.ipynb

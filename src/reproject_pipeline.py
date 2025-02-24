@@ -147,9 +147,9 @@ class ReprojectHRT2HMIPipe:
                            
 if __name__ == "__main__":
 
-    hrt_input_file_series = 'blos'
-    hmi_input_folder = '/scratch/slam/sinjan/arlongterm_hmi/blos_720/'
-    hmi_target_file_series = 'hmi.m_720s'#'hmi.b_720s_field'
+    hrt_input_file_series = 'binc'
+    hmi_input_folder = '/scratch/slam/sinjan/arlongterm_hmi/b_720/'
+    hmi_target_file_series = 'hmi.b_720s_inclination'#'hmi.b_720s_field'
 
     for day in [12,13,14,15,16,17]:
         hrt_input_folder = f'/scratch/solo/phi/AR_Long_Term_2023_SL/l2/2023-10-{day}/'

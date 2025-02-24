@@ -166,9 +166,15 @@ cython_debug/
 movie_pngs
 movie_pngs/*
 
+plots/*
+
 htmlcov
 htmlcov/*
 jupyter_nbks/log_arlongterm_guassian_kernel.txt
 *.txt
 jupyter_nbks/bmag_compare.ipynb
 jupyter_nbks/straylight.ipynb
+0350120601_V202501271029.pdf
+hmi.b_720s.20231017_002400_TAI.chisq.fits
+hmi.b_720s.20231017_002400_TAI.info_map.fits
+hmi.b_720s.20231017_002400_TAI.confid_map.fits

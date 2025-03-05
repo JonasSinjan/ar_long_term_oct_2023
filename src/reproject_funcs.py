@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 import sunpy
 import sunpy.map
+from sunpy.coordinates import propagate_with_solar_surface
 from datetime import datetime as dt
 import astropy.units as u
 
@@ -29,32 +30,33 @@ def hmi2phi(hmi_map: sunpy.map.Map, phi_map: sunpy.map.Map) -> sunpy.map.Map:
         HMI blos map remapped to PHI coords with same size as PHI map (submap)
     """
 
-    out_header = sunpy.map.make_fitswcs_header(
-         hmi_map.data.shape, phi_map.reference_coordinate.replicate(rsun=hmi_map.reference_coordinate.rsun),
-         scale=u.Quantity(phi_map.scale),
-         instrument="HMI",
-         observatory="SDO",
-         wavelength=hmi_map.wavelength
-         )
-    out_header['dsun_obs'] = phi_map.coordinate_frame.observer.radius.to(u.m).value
-    out_header['hglt_obs'] = phi_map.coordinate_frame.observer.lat.value
-    out_header['hgln_obs'] = phi_map.coordinate_frame.observer.lon.value
-    
-    out_header['crpix1'] = phi_map.fits_header['CRPIX1']
-    out_header['crpix2'] = phi_map.fits_header['CRPIX2']
-    out_header['crval1'] = phi_map.fits_header['CRVAL1']
-    out_header['crval2'] = phi_map.fits_header['CRVAL2']    
-    out_header['crota2'] = phi_map.fits_header['CROTA']
-    out_header['PC1_1'] = phi_map.fits_header['PC1_1']
-    out_header['PC1_2'] = phi_map.fits_header['PC1_2']
-    out_header['PC2_1'] = phi_map.fits_header['PC2_1']
-    out_header['PC2_2'] = phi_map.fits_header['PC2_2']
-    out_header['cdelt1'] = phi_map.fits_header['cdelt1']
-    out_header['cdelt2'] = phi_map.fits_header['cdelt2']
-    out_WCS=WCS(out_header)
-    
-    hmi_repro, _ = reproject_adaptive(hmi_map, out_WCS, hmi_map.data.shape)
-    hmi_remap = sunpy.map.Map((hmi_repro, out_WCS))
+    with propagate_with_solar_surface():
+        out_header = sunpy.map.make_fitswcs_header(
+            hmi_map.data.shape, phi_map.reference_coordinate.replicate(rsun=hmi_map.reference_coordinate.rsun),
+            scale=u.Quantity(phi_map.scale),
+            instrument="HMI",
+            observatory="SDO",
+            wavelength=hmi_map.wavelength
+            )
+        out_header['dsun_obs'] = phi_map.coordinate_frame.observer.radius.to(u.m).value
+        out_header['hglt_obs'] = phi_map.coordinate_frame.observer.lat.value
+        out_header['hgln_obs'] = phi_map.coordinate_frame.observer.lon.value
+        
+        out_header['crpix1'] = phi_map.fits_header['CRPIX1']
+        out_header['crpix2'] = phi_map.fits_header['CRPIX2']
+        out_header['crval1'] = phi_map.fits_header['CRVAL1']
+        out_header['crval2'] = phi_map.fits_header['CRVAL2']    
+        out_header['crota2'] = phi_map.fits_header['CROTA']
+        out_header['PC1_1'] = phi_map.fits_header['PC1_1']
+        out_header['PC1_2'] = phi_map.fits_header['PC1_2']
+        out_header['PC2_1'] = phi_map.fits_header['PC2_1']
+        out_header['PC2_2'] = phi_map.fits_header['PC2_2']
+        out_header['cdelt1'] = phi_map.fits_header['cdelt1']
+        out_header['cdelt2'] = phi_map.fits_header['cdelt2']
+        out_WCS=WCS(out_header)
+        
+        hmi_repro, _ = reproject_adaptive(hmi_map, out_WCS, hmi_map.data.shape)
+        hmi_remap = sunpy.map.Map((hmi_repro, out_WCS))
     
     #take the submap of the hmi using hrt coords
     top_right = hmi_remap.world_to_pixel(phi_map.top_right_coord)
@@ -200,42 +202,43 @@ def get_hrt_remapped_on_hmi(hrt_file: str, hmi_file: str, err: tuple, reproject_
 
     hmi_map=sunpy.map.Map(hmi_file).rotate()
 
-    out_header = sunpy.map.make_fitswcs_header(
-         hmi_map.data.shape, hmi_map.reference_coordinate.replicate(rsun=hrt_map.reference_coordinate.rsun),
-         scale=u.Quantity(hmi_map.scale),
-         instrument="SO/PHI-HRT",
-         observatory="SolO",
-         wavelength=hrt_map.wavelength
-         )
-    out_header['dsun_obs'] = hmi_map.coordinate_frame.observer.radius.to(u.m).value
-    out_header['hglt_obs'] = hmi_map.coordinate_frame.observer.lat.value
-    out_header['hgln_obs'] = hmi_map.coordinate_frame.observer.lon.value
-    
-    out_header['crpix1'] = hmi_map.fits_header['CRPIX1']
-    out_header['crpix2'] = hmi_map.fits_header['CRPIX2']
-    out_header['crval1'] = hmi_map.fits_header['CRVAL1']
-    out_header['crval2'] = hmi_map.fits_header['CRVAL2']    
-    out_header['PC1_1'] = hmi_map.fits_header['PC1_1']
-    out_header['PC1_2'] = hmi_map.fits_header['PC1_2']
-    out_header['PC2_1'] = hmi_map.fits_header['PC2_1']
-    out_header['PC2_2'] = hmi_map.fits_header['PC2_2']
-    out_header['cdelt1'] = hmi_map.fits_header['cdelt1']
-    out_header['cdelt2'] = hmi_map.fits_header['cdelt2']
-    out_WCS=WCS(out_header)
+    with propagate_with_solar_surface():
+        out_header = sunpy.map.make_fitswcs_header(
+            hmi_map.data.shape, hmi_map.reference_coordinate.replicate(rsun=hrt_map.reference_coordinate.rsun),
+            scale=u.Quantity(hmi_map.scale),
+            instrument="SO/PHI-HRT",
+            observatory="SolO",
+            wavelength=hrt_map.wavelength
+            )
+        out_header['dsun_obs'] = hmi_map.coordinate_frame.observer.radius.to(u.m).value
+        out_header['hglt_obs'] = hmi_map.coordinate_frame.observer.lat.value
+        out_header['hgln_obs'] = hmi_map.coordinate_frame.observer.lon.value
+        
+        out_header['crpix1'] = hmi_map.fits_header['CRPIX1']
+        out_header['crpix2'] = hmi_map.fits_header['CRPIX2']
+        out_header['crval1'] = hmi_map.fits_header['CRVAL1']
+        out_header['crval2'] = hmi_map.fits_header['CRVAL2']    
+        out_header['PC1_1'] = hmi_map.fits_header['PC1_1']
+        out_header['PC1_2'] = hmi_map.fits_header['PC1_2']
+        out_header['PC2_1'] = hmi_map.fits_header['PC2_1']
+        out_header['PC2_2'] = hmi_map.fits_header['PC2_2']
+        out_header['cdelt1'] = hmi_map.fits_header['cdelt1']
+        out_header['cdelt2'] = hmi_map.fits_header['cdelt2']
+        out_WCS=WCS(out_header)
 
-    hrt_repro, _ = reproject_adaptive(hrt_map, out_WCS, hmi_map.data.shape, conserve_flux=False,kernel=reproject_args['kernel']\
-                                ,kernel_width=reproject_args['kernel_width'],sample_region_width=reproject_args['sample_region_width'])
+        hrt_repro, _ = reproject_adaptive(hrt_map, out_WCS, hmi_map.data.shape, conserve_flux=False,kernel=reproject_args['kernel']\
+                                    ,kernel_width=reproject_args['kernel_width'],sample_region_width=reproject_args['sample_region_width'])
 
-    if tmp.shape[0]<=1800 and tmp.shape[1]<=1800:
-        hrt_remap = sunpy.map.Map((hrt_repro, hmi_map.meta))
-    elif tmp.shape[0]>1800 and tmp.shape[1]>1800:
-        arr_mask=np.zeros(tmp.shape)
-        arr_mask[150:-150,150:-150]=1
-        mask_map = sunpy.map.Map(arr_mask,h)
-        mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape,kernel='Gaussian',sample_region_width=1)
-        mask_hrt[mask_hrt<1]=np.nan
-        hrt_remap = sunpy.map.Map((hrt_repro*mask_hrt, hmi_map.meta))
-    print(dt.now())
+        if tmp.shape[0]<=1800 and tmp.shape[1]<=1800:
+            hrt_remap = sunpy.map.Map((hrt_repro, hmi_map.meta))
+        elif tmp.shape[0]>1800 and tmp.shape[1]>1800:
+            arr_mask=np.zeros(tmp.shape)
+            arr_mask[150:-150,150:-150]=1
+            mask_map = sunpy.map.Map(arr_mask,h)
+            mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape,kernel='Gaussian',sample_region_width=1)
+            mask_hrt[mask_hrt<1]=np.nan
+            hrt_remap = sunpy.map.Map((hrt_repro*mask_hrt, hmi_map.meta))
+        print(dt.now())
     
     return hrt_remap, hmi_map
 
@@ -298,6 +301,38 @@ def mu_angle_arr(hdr,coord=None):
 
 
 def center_coord(hdr):
+    """calculate the center of the solar disk in the rotated reference system
+
+    Parameters
+    ----------
+    hdr : header
+        header of the fits file
+
+    Returns
+    -------
+    center: [x,y,1] coordinates of the solar disk center (units: pixel)
+    """
+
+    pxsc = hdr['CDELT1']
+    crval1 = hdr['CRVAL1']
+    crval2 = hdr['CRVAL2']
+    crpix1 = hdr['CRPIX1']
+    crpix2 = hdr['CRPIX2']
+    PC1_1 = hdr['PC1_1']
+    PC1_2 = hdr['PC1_2']
+    PC2_1 = hdr['PC2_1']
+    PC2_2 = hdr['PC2_2']
+
+    HPC1 = 0
+    HPC2 = 0
+
+    x0 = crpix1 + 1/pxsc * (PC1_1*(HPC1-crval1) - PC1_2*(HPC2-crval2))- 1
+    y0 = crpix2 + 1/pxsc * (PC2_2*(HPC2-crval2) - PC2_1*(HPC1-crval1))- 1
+
+    return np.asarray([x0,y0,1])
+
+
+def center_coord_old(hdr):
     """calculate the center of the solar disk in the rotated reference system
     Parameters
     ----------
@@ -449,42 +484,43 @@ def get_hrt_MU_remapped_on_hmi(hrt_file, hmi_file, err):
     hrt_mu_map = sunpy.map.Map(arr,h)
     hmi_map=sunpy.map.Map(hmi_file).rotate()
 
-    out_header = sunpy.map.make_fitswcs_header(
-         hmi_map.data.shape, hmi_map.reference_coordinate.replicate(rsun=hrt_mu_map.reference_coordinate.rsun),
-         scale=u.Quantity(hmi_map.scale),
-         instrument="SO/PHI-HRT",
-         observatory="SolO",
-         wavelength=hrt_mu_map.wavelength
-         )
-    out_header['dsun_obs'] = hmi_map.coordinate_frame.observer.radius.to(u.m).value
-    out_header['hglt_obs'] = hmi_map.coordinate_frame.observer.lat.value
-    out_header['hgln_obs'] = hmi_map.coordinate_frame.observer.lon.value
-    
-    out_header['crpix1'] = hmi_map.fits_header['CRPIX1']
-    out_header['crpix2'] = hmi_map.fits_header['CRPIX2']
-    out_header['crval1'] = hmi_map.fits_header['CRVAL1']
-    out_header['crval2'] = hmi_map.fits_header['CRVAL2']    
-    out_header['PC1_1'] = hmi_map.fits_header['PC1_1']
-    out_header['PC1_2'] = hmi_map.fits_header['PC1_2']
-    out_header['PC2_1'] = hmi_map.fits_header['PC2_1']
-    out_header['PC2_2'] = hmi_map.fits_header['PC2_2']
-    out_header['cdelt1'] = hmi_map.fits_header['cdelt1']
-    out_header['cdelt2'] = hmi_map.fits_header['cdelt2']
-    out_WCS=WCS(out_header)
+    with propagate_with_solar_surface():
+        out_header = sunpy.map.make_fitswcs_header(
+            hmi_map.data.shape, hmi_map.reference_coordinate.replicate(rsun=hrt_mu_map.reference_coordinate.rsun),
+            scale=u.Quantity(hmi_map.scale),
+            instrument="SO/PHI-HRT",
+            observatory="SolO",
+            wavelength=hrt_mu_map.wavelength
+            )
+        out_header['dsun_obs'] = hmi_map.coordinate_frame.observer.radius.to(u.m).value
+        out_header['hglt_obs'] = hmi_map.coordinate_frame.observer.lat.value
+        out_header['hgln_obs'] = hmi_map.coordinate_frame.observer.lon.value
+        
+        out_header['crpix1'] = hmi_map.fits_header['CRPIX1']
+        out_header['crpix2'] = hmi_map.fits_header['CRPIX2']
+        out_header['crval1'] = hmi_map.fits_header['CRVAL1']
+        out_header['crval2'] = hmi_map.fits_header['CRVAL2']    
+        out_header['PC1_1'] = hmi_map.fits_header['PC1_1']
+        out_header['PC1_2'] = hmi_map.fits_header['PC1_2']
+        out_header['PC2_1'] = hmi_map.fits_header['PC2_1']
+        out_header['PC2_2'] = hmi_map.fits_header['PC2_2']
+        out_header['cdelt1'] = hmi_map.fits_header['cdelt1']
+        out_header['cdelt2'] = hmi_map.fits_header['cdelt2']
+        out_WCS=WCS(out_header)
 
-    hrt_repro, footprint = reproject_adaptive(hrt_mu_map, out_WCS, hmi_map.data.shape, kernel='Hann')
-    
-    #print(tmp.shape)
-    
-    if tmp.shape[0]<=1800 and tmp.shape[1]<=1800:
-        hrt_mu_map = sunpy.map.Map((hrt_repro, hmi_map.meta))
-    elif tmp.shape[0]>1800 and tmp.shape[1]>1800:
-        arr_mask=np.zeros(tmp.shape)
-        arr_mask[150:-150,150:-150]=1
-        mask_map = sunpy.map.Map(arr_mask,h)
-        mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape, kernel='Hann')
-        mask_hrt[mask_hrt<1]=np.nan
-        hrt_mu_map = sunpy.map.Map((hrt_repro*mask_hrt,hmi_map.meta))
+        hrt_repro, footprint = reproject_adaptive(hrt_mu_map, out_WCS, hmi_map.data.shape, kernel='Hann')
+        
+        #print(tmp.shape)
+        
+        if tmp.shape[0]<=1800 and tmp.shape[1]<=1800:
+            hrt_mu_map = sunpy.map.Map((hrt_repro, hmi_map.meta))
+        elif tmp.shape[0]>1800 and tmp.shape[1]>1800:
+            arr_mask=np.zeros(tmp.shape)
+            arr_mask[150:-150,150:-150]=1
+            mask_map = sunpy.map.Map(arr_mask,h)
+            mask_hrt,_= reproject_adaptive(mask_map, out_WCS, hmi_map.data.shape, kernel='Hann')
+            mask_hrt[mask_hrt<1]=np.nan
+            hrt_mu_map = sunpy.map.Map((hrt_repro*mask_hrt,hmi_map.meta))
 
     hmi_shape = hmi_map.data.shape
     x = range(hmi_shape[0])

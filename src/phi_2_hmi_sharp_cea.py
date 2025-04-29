@@ -12,7 +12,7 @@ import json
 import datetime
 from scipy.fftpack import fft2, ifft2, fftshift
 
-from utils import phi_disambig
+from utils import phi_disambig, largest_rectangle_in_mask, shift_array_multi
 from stereo_help import image_register
 from apply_hmi_psf import make_psf_hmi_th
 from phi_b2ptr import phi_b2ptr
@@ -135,16 +135,19 @@ def reproject_phi_2_hmi_cea(phi_ptr_map, cea_hdr_phi):
 
 
 def calculate_xy_shifts(phi_cea_br_map, hmi_br_map):
-    #TODO:
-    #- need to set nans to a value or use a mask/slice
-    s = image_register(hmi_br_map, phi_cea_br_map, subpixel = False)
+    mask = ~np.isnan(phi_cea_br_map.data)
+    _, tl, br = largest_rectangle_in_mask(mask)
+
+    slice_x = slice(br[1],tl[1])
+    slice_y = slice(br[0],tl[0])
+    s = image_register(hmi_br_map.data[slice_y,slice_x], phi_cea_br_map[slice_y,slice_x], subpixel = False)
     return s[1]
 
 
 def correct_shifts(s, phi_cea_bp_map,phi_cea_bt_map, phi_cea_br_map):
-    phi_cea_bp_shifted = np.roll(phi_cea_bp_map.data, s, axis=(0,1))
-    phi_cea_bt_shifted = np.roll(phi_cea_bt_map.data, s, axis=(0,1))
-    phi_cea_br_shifted = np.roll(phi_cea_br_map.data, s, axis=(0,1))
+    phi_cea_bp_shifted = shift_array_multi(phi_cea_bp_map.data, s, fill_value=np.nan)
+    phi_cea_bt_shifted = shift_array_multi(phi_cea_bt_map.data, s, fill_value=np.nan)
+    phi_cea_br_shifted = shift_array_multi(phi_cea_br_map.data, s, fill_value=np.nan)
 
     phi_cea_bp_shifted_map = sunpy.map.Map((phi_cea_bp_shifted, phi_cea_bp_map.fits_header))
     phi_cea_bt_shifted_map = sunpy.map.Map((phi_cea_bt_shifted, phi_cea_bt_map.fits_header))

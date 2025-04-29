@@ -1534,3 +1534,106 @@ def phi_disambig(bazi,bamb,method=2):
     disbazi[disambig%2 != 0] += 180
     
     return disbazi
+
+def largest_rectangle_area_in_histogram(heights):
+    """
+    Helper function to compute largest rectangle area in a histogram row.
+    Returns: (area, start_col, end_col, height)
+    """
+    stack = []
+    max_area = 0
+    start_col = end_col = max_height = 0
+    heights = list(heights) + [0]  # Add sentinel
+
+    for i, h in enumerate(heights):
+        last_index = i
+        while stack and stack[-1][1] > h:
+            index, height = stack.pop()
+            area = height * (i - index)
+            if area > max_area:
+                max_area = area
+                start_col = index
+                end_col = i - 1
+                max_height = height
+            last_index = index
+        stack.append((last_index, h))
+
+    return max_area, start_col, end_col, max_height
+
+def largest_rectangle_in_mask(mask):
+    """
+    Find the largest rectangle containing only 1s in a binary mask.
+    
+    Args:
+        mask: 2D numpy array of 0s and 1s.
+    
+    Returns:
+        area: int, area of the largest rectangle
+        top_left: tuple (row, col) of the top-left corner
+        bottom_right: tuple (row, col) of the bottom-right corner
+    """
+    if not isinstance(mask, np.ndarray) or mask.ndim != 2:
+        raise ValueError("Input must be a 2D NumPy array of 0s and 1s.")
+
+    rows, cols = mask.shape
+    heights = np.zeros(cols, dtype=int)
+    max_area = 0
+    top_left = bottom_right = None
+
+    for row in range(rows):
+        for col in range(cols):
+            heights[col] = heights[col] + 1 if mask[row, col] == 1 else 0
+
+        area, start_col, end_col, height = largest_rectangle_area_in_histogram(heights)
+
+        if area > max_area:
+            max_area = area
+            top_left = (row - height + 1, start_col)
+            bottom_right = (row, end_col)
+
+    return max_area, top_left, bottom_right
+
+
+def shift_array_multi(arr, shift, fill_value=0):
+    """
+    Shift a NumPy array along multiple axes without wrapping around edges.
+
+    Parameters:
+    - arr: np.ndarray
+    - shift: int or tuple of ints (one per axis to shift)
+    - fill_value: value to fill the emptied positions (default: 0)
+
+    Returns:
+    - shifted array
+    """
+    if isinstance(shift, int):
+        shift = (shift,)
+    if len(shift) > arr.ndim:
+        raise ValueError("Shift tuple longer than array dimensions")
+
+    # Pad the shift tuple with zeros if needed
+    shift = tuple(shift[i] if i < len(shift) else 0 for i in range(arr.ndim))
+
+    result = np.full_like(arr, fill_value)
+
+    src_slices = []
+    dst_slices = []
+
+    for ax, sh in enumerate(shift):
+        axis_len = arr.shape[ax]
+        if sh > 0:
+            src_slice = slice(0, axis_len - sh)
+            dst_slice = slice(sh, axis_len)
+        elif sh < 0:
+            src_slice = slice(-sh, axis_len)
+            dst_slice = slice(0, axis_len + sh)
+        else:
+            src_slice = slice(0, axis_len)
+            dst_slice = slice(0, axis_len)
+
+        src_slices.append(src_slice)
+        dst_slices.append(dst_slice)
+
+    # Convert slices to tuple of slices for advanced indexing
+    result[tuple(dst_slices)] = arr[tuple(src_slices)]
+    return result

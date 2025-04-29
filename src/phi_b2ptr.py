@@ -2,7 +2,7 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.units as u
-from astropy.coordinates import frames
+from sunpy.coordinates import frames
 
 def get_stonyhurst_lonlat(wcs, shape):
     """

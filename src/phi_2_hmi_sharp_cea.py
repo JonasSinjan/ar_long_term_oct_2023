@@ -142,7 +142,6 @@ def calculate_xy_shifts(phi_cea_br_map, hmi_br_map):
 
 
 def correct_shifts(s, phi_cea_bp_map,phi_cea_bt_map, phi_cea_br_map):
-
     phi_cea_bp_shifted = np.roll(phi_cea_bp_map.data, s, axis=(0,1))
     phi_cea_bt_shifted = np.roll(phi_cea_bt_map.data, s, axis=(0,1))
     phi_cea_br_shifted = np.roll(phi_cea_br_map.data, s, axis=(0,1))
@@ -155,13 +154,13 @@ def correct_shifts(s, phi_cea_bp_map,phi_cea_bt_map, phi_cea_br_map):
 
 
 def get_phi_cea_bptr_maps(bptr_psf, phi_updated_hdr, bmag_fp, hmi_br_files, hmi_br_filetimes):
-
     hmi_br_map = get_hmi_cea_br_map(hmi_br_filetimes, hmi_br_files, bmag_fp)
-    cea_hdr_phi = make_cea_hdr_for_phi(hmi_br_map, bptr_psf)
     
     bp_map = sunpy.map.Map(bptr_psf[:,:,0], phi_updated_hdr)
     bt_map = sunpy.map.Map(bptr_psf[:,:,1], phi_updated_hdr)
     br_map = sunpy.map.Map(bptr_psf[:,:,2], phi_updated_hdr)
+
+    cea_hdr_phi = make_cea_hdr_for_phi(hmi_br_map, br_map)
 
     phi_cea_bp_map = reproject_phi_2_hmi_cea(bp_map, cea_hdr_phi)
     phi_cea_bt_map = reproject_phi_2_hmi_cea(bt_map, cea_hdr_phi)

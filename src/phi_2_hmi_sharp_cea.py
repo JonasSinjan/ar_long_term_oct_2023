@@ -9,12 +9,33 @@ from sunpy.coordinates import frames
 import numpy as np
 import os
 import json
+import datetime
 from scipy.fftpack import fft2, ifft2, fftshift
 
 from utils import phi_disambig
 from stereo_help import image_register
 from apply_hmi_psf import make_psf_hmi_th
 from phi_b2ptr import phi_b2ptr
+
+
+def load_phi_files(date):
+    fdir = f'/scratch/solo/phi/AR_Long_Term_2023_SL/l2/2023-10-{date}/'
+    phi_files = os.listdir(fdir)
+
+    phi_bmag_files = [fdir + f for f in phi_files if 'bmag' in f]
+    phi_binc_files = [fdir + f for f in phi_files if 'binc' in f]
+    phi_bazi_files = [fdir + f for f in phi_files if 'bazi' in f]
+
+    phi_bmag_files.sort()
+    phi_binc_files.sort()
+    phi_bazi_files.sort()
+
+    assert len(phi_bmag_files) == len(phi_binc_files) == len(phi_bazi_files), "Mismatch in number of files"
+    assert phi_bmag_files == [f.replace('binc','bmag') for f in phi_binc_files], "Mismatch in file names of Bmag with Binc"
+    assert phi_bmag_files == [f.replace('bazi','bmag') for f in phi_bazi_files], "Mismatch in file names of Bmag with Bazi"
+
+    return phi_bmag_files, phi_binc_files, phi_bazi_files
+
 
 def run_phi_disambig(bazi_fp):
     #get bamb_fp
@@ -71,6 +92,23 @@ def update_hdr(hdr, date):
     return hdr
 
 
+def calculate_hmi_br_filetimes():
+    fdir = '/scratch/slam/sinjan/arlongterm_hmi/sharp_cea_720s/'
+    hmi_cea_files = os.listdir(fdir)
+    hmi_br_files = sorted([fdir + f for f in hmi_cea_files if 'TAI.Br.fits' in f])
+    dtai = datetime.timedelta(seconds=37)
+    t_obs_hmi = [datetime.datetime.strptime(fits.getheader(i,1)['T_OBS'],'%Y.%m.%d_%H:%M:%S.%f_TAI') - dtai for i in hmi_br_files]
+    return t_obs_hmi, hmi_br_files
+
+
+def get_hmi_cea_br_map(hmi_br_filetimes, hmi_br_files, bmag_fp):
+    phi_date_ear = datetime.datetime.strptime(fits.getheader(bmag_fp)['DATE_EAR'],'%Y-%m-%dT%H:%M:%S.%f')
+    diff = [np.abs((phi_date_ear - t).total_seconds()) for t in hmi_br_filetimes]
+    ind = np.argmin(diff)
+    hmi_br_map = sunpy.map.Map(hmi_br_files[ind])
+    return hmi_br_map
+
+
 def make_cea_hdr_for_phi(hmi_br_map, phi_bptr_map):
     cea_hdr_phi = make_fitswcs_header(hmi_br_map.data.shape, hmi_br_map.reference_coordinate.replicate(rsun=phi_bptr_map.reference_coordinate.rsun), projection_code='CEA',scale=u.Quantity(hmi_br_map.scale))
 
@@ -96,47 +134,42 @@ def reproject_phi_2_hmi_cea(phi_ptr_map, cea_hdr_phi):
     return outmap
 
 
-def correct_shifts(phi_cea_map, hmi_map):
+def calculate_xy_shifts(phi_cea_br_map, hmi_br_map):
     #TODO:
     #- need to set nans to a value or use a mask/slice
-    s = image_register(hmi_map, phi_cea_map, subpixel = False)
-
-    phi_cea_shifted = np.roll(phi_cea_map.data, s[1], axis=(0,1))
-    return sunpy.map.Map((phi_cea_shifted, phi_cea_map.fits_header))
+    s = image_register(hmi_br_map, phi_cea_br_map, subpixel = False)
+    return s[1]
 
 
-def get_phi_cea_bptr_maps(bptr_psf, phi_updated_hdr):
-    #get_hmi_cea_br_map
-    #make_cea_hdr_for_phi
-    #reproject_phi_2_hmi_cea (for Bp,Bt,Br separately)
-    #find shifting comparing PHI_Br map with HMI Br map
-    #apply shift to all 3 maps
-    #return maps
-    pass
+def correct_shifts(s, phi_cea_bp_map,phi_cea_bt_map, phi_cea_br_map):
+
+    phi_cea_bp_shifted = np.roll(phi_cea_bp_map.data, s, axis=(0,1))
+    phi_cea_bt_shifted = np.roll(phi_cea_bt_map.data, s, axis=(0,1))
+    phi_cea_br_shifted = np.roll(phi_cea_br_map.data, s, axis=(0,1))
+
+    phi_cea_bp_shifted_map = sunpy.map.Map((phi_cea_bp_shifted, phi_cea_bp_map.fits_header))
+    phi_cea_bt_shifted_map = sunpy.map.Map((phi_cea_bt_shifted, phi_cea_bt_map.fits_header))
+    phi_cea_br_shifted_map = sunpy.map.Map((phi_cea_br_shifted, phi_cea_br_map.fits_header))
+
+    return phi_cea_bp_shifted_map, phi_cea_bt_shifted_map, phi_cea_br_shifted_map
 
 
-def get_hmi_cea_br_map():
-    #needed to provide WCS information for reprojection target and for finding any residual shifts
-    pass
+def get_phi_cea_bptr_maps(bptr_psf, phi_updated_hdr, bmag_fp, hmi_br_files, hmi_br_filetimes):
 
+    hmi_br_map = get_hmi_cea_br_map(hmi_br_filetimes, hmi_br_files, bmag_fp)
+    cea_hdr_phi = make_cea_hdr_for_phi(hmi_br_map, bptr_psf)
+    
+    bp_map = sunpy.map.Map(bptr_psf[:,:,0], phi_updated_hdr)
+    bt_map = sunpy.map.Map(bptr_psf[:,:,1], phi_updated_hdr)
+    br_map = sunpy.map.Map(bptr_psf[:,:,2], phi_updated_hdr)
 
-def load_phi_files(date):
-    fdir = f'/scratch/solo/phi/AR_Long_Term_2023_SL/l2/2023-10-{date}/'
-    phi_files = os.listdir(fdir)
-
-    phi_bmag_files = [fdir + f for f in phi_files if 'bmag' in f]
-    phi_binc_files = [fdir + f for f in phi_files if 'binc' in f]
-    phi_bazi_files = [fdir + f for f in phi_files if 'bazi' in f]
-
-    phi_bmag_files.sort()
-    phi_binc_files.sort()
-    phi_bazi_files.sort()
-
-    assert len(phi_bmag_files) == len(phi_binc_files) == len(phi_bazi_files), "Mismatch in number of files"
-    assert phi_bmag_files == [f.replace('binc','bmag') for f in phi_binc_files], "Mismatch in file names of Bmag with Binc"
-    assert phi_bmag_files == [f.replace('bazi','bmag') for f in phi_bazi_files], "Mismatch in file names of Bmag with Bazi"
-
-    return phi_bmag_files, phi_binc_files, phi_bazi_files
+    phi_cea_bp_map = reproject_phi_2_hmi_cea(bp_map, cea_hdr_phi)
+    phi_cea_bt_map = reproject_phi_2_hmi_cea(bt_map, cea_hdr_phi)
+    phi_cea_br_map = reproject_phi_2_hmi_cea(br_map, cea_hdr_phi)
+    
+    shift = calculate_xy_shifts(phi_cea_br_map, hmi_br_map)
+    
+    return correct_shifts(shift, phi_cea_bp_map, phi_cea_bt_map, phi_cea_br_map)
 
 
 def save_phi_cea_maps_to_files(out_dir, bmag, phi_cea_bp_map, phi_cea_bt_map, phi_cea_br_map):
@@ -154,6 +187,7 @@ def save_phi_cea_maps_to_files(out_dir, bmag, phi_cea_bp_map, phi_cea_bt_map, ph
 def main(out_dir, date):
 
     phi_bmag_files, phi_binc_files, phi_bazi_files = load_phi_files(date)
+    hmi_br_filetimes, hmi_br_files = calculate_hmi_br_filetimes()
 
     for bmag_fp, binc_fp, bazi_fp in zip(phi_bmag_files, phi_binc_files, phi_bazi_files):
         disambig = run_phi_disambig(bazi_fp)
@@ -161,5 +195,5 @@ def main(out_dir, date):
         bptr, _, _ = phi_b2ptr(bvec)
         bptr_psf = apply_hmi_psf_on_phi_bptr(bmag_fp,bptr)
         phi_updated_hdr = update_hdr(bmag_fp, date)
-        phi_cea_bp_map, phi_cea_bt_map, phi_cea_br_map = get_phi_cea_bptr_maps(bptr_psf, phi_updated_hdr)
+        phi_cea_bp_map, phi_cea_bt_map, phi_cea_br_map = get_phi_cea_bptr_maps(bptr_psf, phi_updated_hdr, bmag_fp, hmi_br_filetimes, hmi_br_files)
         save_phi_cea_maps_to_files(out_dir, bmag_fp, phi_cea_bp_map, phi_cea_bt_map, phi_cea_br_map)

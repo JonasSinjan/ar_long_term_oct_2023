@@ -178,3 +178,6 @@ jupyter_nbks/straylight.ipynb
 hmi.b_720s.20231017_002400_TAI.chisq.fits
 hmi.b_720s.20231017_002400_TAI.info_map.fits
 hmi.b_720s.20231017_002400_TAI.confid_map.fits
+
+bamb_phi/*
+*.tgz

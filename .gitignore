@@ -181,4 +181,5 @@ hmi.b_720s.20231017_002400_TAI.confid_map.fits
 
 bamb_phi/*
 *.tgz
-./phi_cea_maps/*
+phi_cea_maps/*
+bptr_movie_pngs/*
